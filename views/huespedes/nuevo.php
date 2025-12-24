@@ -99,8 +99,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             $finanzasModel->registrarPagoQR($datos_qr);
         }
-        
-        $metodo_pago_texto = $metodo_pago === 'qr' ? 'QR' : 'Efectivo';
+                // Registrar acompañantes si existen
+        if (isset($_POST['acomp_ci']) && is_array($_POST['acomp_ci']) && count($_POST['acomp_ci']) > 0) {
+            $acomp_count = 0;
+            for ($i = 0; $i < count($_POST['acomp_ci']); $i++) {
+                if (!empty($_POST['acomp_ci'][$i]) && !empty($_POST['acomp_nombres'][$i])) {
+                    // Verificar si el acompañante ya existe
+                    $acomp_existente = $huespedModel->buscarPorCI($_POST['acomp_ci'][$i]);
+                    
+                    if ($acomp_existente) {
+                        $acomp_huesped_id = $acomp_existente['id'];
+                    } else {
+                        // Crear nuevo acompañante
+                        $datos_acomp = [
+                            'nombres_apellidos' => clean_input($_POST['acomp_nombres'][$i]),
+                            'genero' => $_POST['acomp_genero'][$i],
+                            'edad' => (int)$_POST['acomp_edad'][$i],
+                            'estado_civil' => null,
+                            'nacionalidad' => clean_input($_POST['acomp_nacionalidad'][$i]),
+                            'ci_pasaporte' => clean_input($_POST['acomp_ci'][$i]),
+                            'profesion' => null,
+                            'objeto' => isset($_POST['acomp_relacion'][$i]) ? clean_input($_POST['acomp_relacion'][$i]) : null,
+                            'procedencia' => null
+                        ];
+                        
+                        $acomp_huesped_id = $huespedModel->crear($datos_acomp);
+                    }
+                    
+                    // Registrar ocupación del acompañante (misma habitación, mismo período)
+                    if ($acomp_huesped_id) {
+                        $datos_ocupacion_acomp = [
+                            'huesped_id' => $acomp_huesped_id,
+                            'habitacion_id' => $habitacion['id'],
+                            'nro_pieza' => clean_input($_POST['nro_pieza']),
+                            'prox_destino' => !empty($_POST['prox_destino']) ? clean_input($_POST['prox_destino']) : null,
+                            'via_ingreso' => !empty($_POST['via_ingreso']) ? clean_input($_POST['via_ingreso']) : null,
+                            'fecha_ingreso' => $fecha_ingreso,
+                            'nro_dias' => $nro_dias,
+                            'fecha_salida_estimada' => $fecha_salida
+                        ];
+                        
+                        $registroModel->crear($datos_ocupacion_acomp);
+                        $acomp_count++;
+                    }
+                }
+            }
+            
+            if ($acomp_count > 0) {
+                $mensaje .= " Se registraron {$acomp_count} acompañante(s). ";
+            }
+        }
+                $metodo_pago_texto = $metodo_pago === 'qr' ? 'QR' : 'Efectivo';
         $mensaje .= 'Ocupación e ingreso registrados correctamente. Total: Bs. ' . number_format($monto_total, 2) . ' (' . $metodo_pago_texto . ')';
         $tipo_mensaje = 'success';
         
@@ -342,6 +391,35 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
     
+    <!-- Sección: Acompañantes (Huéspedes Adicionales) -->
+    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden" id="seccion_acompanantes">
+        <div class="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold text-noir">Acompañantes</h2>
+                    <p class="text-sm text-gray-500 mt-1">Para habitaciones compartidas (dobles, triples, matrimoniales)</p>
+                </div>
+                <button 
+                    type="button" 
+                    onclick="agregarAcompanante()" 
+                    class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-all duration-200"
+                >
+                    + Agregar Acompañante
+                </button>
+            </div>
+        </div>
+        
+        <div class="p-8" id="lista_acompanantes">
+            <div class="text-center text-gray-400 py-6" id="mensaje_sin_acompanantes">
+                <svg class="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <p class="text-sm">No hay acompañantes agregados</p>
+                <p class="text-xs mt-1">Haz clic en "Agregar Acompañante" para registrar más personas en la misma habitación</p>
+            </div>
+        </div>
+    </div>
+    
     <!-- Sección: Detalles de Reserva -->
     <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div class="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
@@ -429,42 +507,72 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
             </div>
             
-            <!-- Fila 3: Método de Pago y Número de Transacción -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-noir">
-                        Método de Pago <span class="text-red-500">*</span>
+            <!-- Método de Pago -->
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-noir">
+                    Método de Pago <span class="text-red-500">*</span>
+                </label>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Efectivo -->
+                    <label class="cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="metodo_pago" 
+                            value="efectivo" 
+                            id="metodo_efectivo"
+                            checked
+                            onchange="cambiarMetodoPago('efectivo')"
+                            class="hidden"
+                        >
+                        <div id="btn_efectivo" class="flex items-center justify-center gap-3 p-4 border-2 border-green-500 bg-green-50 rounded-xl transition-all duration-200 hover:shadow-md">
+                            <i class="fas fa-money-bill-wave text-2xl text-green-600"></i>
+                            <span class="font-semibold text-green-700">Efectivo</span>
+                        </div>
                     </label>
-                    <select 
-                        name="metodo_pago"
-                        id="metodo_pago"
-                        required
-                        onchange="toggleNumeroTransaccion()"
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir appearance-none bg-white"
-                    >
-                        <option value="efectivo" <?php echo (isset($_POST['metodo_pago']) && $_POST['metodo_pago'] == 'efectivo') ? 'selected' : 'selected'; ?>>💵 Efectivo</option>
-                        <option value="qr" <?php echo (isset($_POST['metodo_pago']) && $_POST['metodo_pago'] == 'qr') ? 'selected' : ''; ?>>📱 QR</option>
-                    </select>
+                    
+                    <!-- QR -->
+                    <label class="cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="metodo_pago" 
+                            value="qr" 
+                            id="metodo_qr"
+                            onchange="cambiarMetodoPago('qr')"
+                            class="hidden"
+                        >
+                        <div id="btn_qr" class="flex items-center justify-center gap-3 p-4 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-purple-300">
+                            <i class="fas fa-qrcode text-2xl text-gray-600"></i>
+                            <span class="font-semibold text-gray-700">QR</span>
+                        </div>
+                    </label>
                 </div>
                 
-                <div class="space-y-2" id="numero_transaccion_div" style="display: none;">
-                    <label class="block text-sm font-semibold text-noir">
-                        Número de Transacción QR
-                    </label>
-                    <input 
-                        type="text" 
-                        id="numero_transaccion"
-                        name="numero_transaccion"
-                        value="<?php echo isset($_POST['numero_transaccion']) ? htmlspecialchars($_POST['numero_transaccion']) : ''; ?>"
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
-                        placeholder="Nro de transacción (opcional)"
-                    >
+                <!-- Imagen QR (se muestra al seleccionar QR) -->
+                <div id="qr_imagen_container" style="display: none;" class="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-xl text-center">
+                    <p class="text-sm font-semibold text-purple-700 mb-3">Escanea el código QR para realizar el pago:</p>
+                    <img src="<?php echo BASE_PATH; ?>/assets/img/QR.jpeg" alt="QR de pago" class="mx-auto max-w-xs w-full rounded-lg shadow-lg">
+                    
+                    <!-- Número de Transacción -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-semibold text-noir mb-2">
+                            Número de Transacción (Opcional)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="numero_transaccion"
+                            name="numero_transaccion"
+                            value="<?php echo isset($_POST['numero_transaccion']) ? htmlspecialchars($_POST['numero_transaccion']) : ''; ?>"
+                            class="w-full px-4 py-3 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
+                            placeholder="Ingrese el número de transacción"
+                        >
+                    </div>
                 </div>
             </div>
             
             <!-- Fecha Salida Estimada (calculada) -->
             <div class="bg-mist rounded-xl p-6 border border-gray-200">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between mb-3">
                     <div>
                         <label class="block text-sm font-semibold text-noir mb-1">Fecha de Salida Estimada</label>
                         <p class="text-xs text-gray-500">Se calcula automáticamente según los días de estadía</p>
@@ -475,6 +583,9 @@ include __DIR__ . '/../../includes/header.php';
                         readonly
                         class="px-4 py-3 border border-gray-300 rounded-xl bg-white text-noir font-semibold"
                     >
+                </div>
+                <div id="mensaje_salida" class="text-sm font-medium text-blue-700 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                    <i class="fas fa-info-circle mr-1"></i> Complete fecha de ingreso y número de días para calcular
                 </div>
             </div>
         </div>
@@ -495,6 +606,130 @@ include __DIR__ . '/../../includes/header.php';
 </form>
 
 <script>
+let contadorAcompanantes = 0;
+
+// Función para agregar acompañante
+function agregarAcompanante() {
+    contadorAcompanantes++;
+    const container = document.getElementById('lista_acompanantes');
+    const mensajeSin = document.getElementById('mensaje_sin_acompanantes');
+    
+    // Ocultar mensaje si es el primer acompañante
+    if (contadorAcompanantes === 1) {
+        mensajeSin.style.display = 'none';
+    }
+    
+    const acompananteHTML = `
+        <div class="border border-gray-300 rounded-xl p-6 mb-4 bg-purple-50/30" id="acompanante_${contadorAcompanantes}">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-noir">Acompañante #${contadorAcompanantes}</h3>
+                <button 
+                    type="button" 
+                    onclick="eliminarAcompanante(${contadorAcompanantes})"
+                    class="text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                    ✕ Eliminar
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">CI/Pasaporte <span class="text-red-500">*</span></label>
+                    <input 
+                        type="text" 
+                        name="acomp_ci[]" 
+                        id="acomp_ci_${contadorAcompanantes}"
+                        onblur="buscarAcompanantePorCI(${contadorAcompanantes})"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        placeholder="Número de documento"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Nombres y Apellidos <span class="text-red-500">*</span></label>
+                    <input 
+                        type="text" 
+                        name="acomp_nombres[]" 
+                        id="acomp_nombres_${contadorAcompanantes}"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        placeholder="Nombre completo"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Género <span class="text-red-500">*</span></label>
+                    <select 
+                        name="acomp_genero[]" 
+                        id="acomp_genero_${contadorAcompanantes}"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                        <option value="">Seleccione</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Edad <span class="text-red-500">*</span></label>
+                    <input 
+                        type="number" 
+                        name="acomp_edad[]" 
+                        id="acomp_edad_${contadorAcompanantes}"
+                        required
+                        min="1"
+                        max="120"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        placeholder="Edad"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Nacionalidad <span class="text-red-500">*</span></label>
+                    <input 
+                        type="text" 
+                        name="acomp_nacionalidad[]" 
+                        id="acomp_nacionalidad_${contadorAcompanantes}"
+                        required
+                        value="Boliviano"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        placeholder="País"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Relación con Titular</label>
+                    <input 
+                        type="text" 
+                        name="acomp_relacion[]"
+                        id="acomp_relacion_${contadorAcompanantes}"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        placeholder="Ej: Familiar, Amigo, Pareja"
+                    >
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', acompananteHTML);
+}
+
+// Función para eliminar acompañante
+function eliminarAcompanante(id) {
+    const elemento = document.getElementById(`acompanante_${id}`);
+    if (elemento) {
+        elemento.remove();
+        
+        // Contar acompañantes restantes
+        const acompanantesRestantes = document.querySelectorAll('[id^="acompanante_"]').length;
+        if (acompanantesRestantes === 0) {
+            document.getElementById('mensaje_sin_acompanantes').style.display = 'block';
+        }
+    }
+}
+
 // Función para calcular edad automáticamente
 function calcularEdad() {
     const fechaNacimiento = document.getElementById('fecha_nacimiento').value;
@@ -540,13 +775,61 @@ function buscarHuespedPorCI() {
         .catch(error => console.error('Error:', error));
 }
 
+// Función para buscar acompañante por CI y autocompletar datos
+function buscarAcompanantePorCI(id) {
+    const ci = document.getElementById('acomp_ci_' + id).value.trim();
+    
+    if (!ci || ci.length < 3) {
+        return;
+    }
+    
+    fetch('<?php echo BASE_PATH; ?>/controllers/buscar_huesped.php?ci=' + encodeURIComponent(ci))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.huesped) {
+                // Autocompletar datos del acompañante
+                document.getElementById('acomp_nombres_' + id).value = data.huesped.nombres_apellidos || '';
+                document.getElementById('acomp_genero_' + id).value = data.huesped.genero || '';
+                document.getElementById('acomp_edad_' + id).value = data.huesped.edad || '';
+                document.getElementById('acomp_nacionalidad_' + id).value = data.huesped.nacionalidad || '';
+                
+                // Mostrar mensaje de éxito
+                const acompananteDiv = document.getElementById('acompanante_' + id);
+                
+                // Remover mensaje anterior si existe
+                const mensajeAnterior = acompananteDiv.querySelector('.mensaje-encontrado');
+                if (mensajeAnterior) {
+                    mensajeAnterior.remove();
+                }
+                
+                // Agregar nuevo mensaje
+                const mensaje = document.createElement('div');
+                mensaje.className = 'mensaje-encontrado mt-3 p-2 bg-green-100 border border-green-300 rounded-lg text-sm text-green-700 flex items-center gap-2';
+                mensaje.innerHTML = '<i class="fas fa-check-circle"></i> Datos encontrados y completados automáticamente';
+                acompananteDiv.appendChild(mensaje);
+                
+                // Remover mensaje después de 3 segundos
+                setTimeout(() => {
+                    mensaje.remove();
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            console.log('No se encontró el acompañante en el sistema');
+        });
+}
+
 // Función existente para calcular fecha de salida
 function calcularFechaSalida() {
     const fechaIngreso = document.getElementById('fecha_ingreso').value;
     const nroDias = document.getElementById('nro_dias').value;
     
     if (fechaIngreso && nroDias) {
-        const fecha = new Date(fechaIngreso);
+        // Parsear la fecha correctamente evitando problemas de zona horaria
+        const partes = fechaIngreso.split('-');
+        const fecha = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+        
+        // Sumar los días
         fecha.setDate(fecha.getDate() + parseInt(nroDias));
         
         const year = fecha.getFullYear();
@@ -554,6 +837,13 @@ function calcularFechaSalida() {
         const day = String(fecha.getDate()).padStart(2, '0');
         
         document.getElementById('fecha_salida_estimada').value = `${year}-${month}-${day}`;
+        
+        // Actualizar el mensaje de salida
+        const mensajeSalida = document.getElementById('mensaje_salida');
+        if (mensajeSalida) {
+            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            mensajeSalida.innerHTML = `<i class="fas fa-clock mr-1"></i> Salida: ${day} de ${meses[fecha.getMonth()]} de ${year} hasta las 12:00 del mediodía`;
+        }
     }
 }
 
@@ -565,20 +855,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const day = String(hoy.getDate()).padStart(2, '0');
     
     document.getElementById('fecha_ingreso').value = `${year}-${month}-${day}`;
-    
-    // Verificar si hay método de pago QR seleccionado al cargar (en caso de error de validación)
-    toggleNumeroTransaccion();
 });
 
-// Función para mostrar/ocultar campo de número de transacción según método de pago
-function toggleNumeroTransaccion() {
-    const metodoPago = document.getElementById('metodo_pago').value;
-    const numeroTransaccionDiv = document.getElementById('numero_transaccion_div');
+// Función para cambiar método de pago y actualizar estilos
+function cambiarMetodoPago(metodo) {
+    const btnEfectivo = document.getElementById('btn_efectivo');
+    const btnQr = document.getElementById('btn_qr');
+    const qrContainer = document.getElementById('qr_imagen_container');
     
-    if (metodoPago === 'qr') {
-        numeroTransaccionDiv.style.display = 'block';
+    if (metodo === 'efectivo') {
+        // Estilo activo para efectivo
+        btnEfectivo.className = 'flex items-center justify-center gap-3 p-4 border-2 border-green-500 bg-green-50 rounded-xl transition-all duration-200 hover:shadow-md';
+        btnEfectivo.querySelector('i').className = 'fas fa-money-bill-wave text-2xl text-green-600';
+        btnEfectivo.querySelector('span').className = 'font-semibold text-green-700';
+        
+        // Estilo inactivo para QR
+        btnQr.className = 'flex items-center justify-center gap-3 p-4 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-purple-300';
+        btnQr.querySelector('i').className = 'fas fa-qrcode text-2xl text-gray-600';
+        btnQr.querySelector('span').className = 'font-semibold text-gray-700';
+        
+        // Ocultar QR
+        qrContainer.style.display = 'none';
     } else {
-        numeroTransaccionDiv.style.display = 'none';
+        // Estilo inactivo para efectivo
+        btnEfectivo.className = 'flex items-center justify-center gap-3 p-4 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-green-300';
+        btnEfectivo.querySelector('i').className = 'fas fa-money-bill-wave text-2xl text-gray-600';
+        btnEfectivo.querySelector('span').className = 'font-semibold text-gray-700';
+        
+        // Estilo activo para QR
+        btnQr.className = 'flex items-center justify-center gap-3 p-4 border-2 border-purple-500 bg-purple-50 rounded-xl transition-all duration-200 hover:shadow-md';
+        btnQr.querySelector('i').className = 'fas fa-qrcode text-2xl text-purple-600';
+        btnQr.querySelector('span').className = 'font-semibold text-purple-700';
+        
+        // Mostrar QR
+        qrContainer.style.display = 'block';
     }
 }
 

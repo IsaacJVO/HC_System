@@ -136,13 +136,13 @@ include __DIR__ . '/../../includes/header.php';
                                 <div class="text-xs text-gray-500">→ <?php echo htmlspecialchars($ocu['prox_destino'] ?: 'N/A'); ?></div>
                             </td>
                             <td class="px-6 py-4 text-center">
-                                <form method="POST" style="display:inline;" onsubmit="return confirm('¿Finalizar esta ocupación?');">
-                                    <input type="hidden" name="ocupacion_id" value="<?php echo $ocu['id']; ?>">
-                                    <input type="hidden" name="fecha_salida" value="<?php echo date('Y-m-d'); ?>">
-                                    <button type="submit" name="finalizar_ocupacion" class="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors duration-200">
-                                        Check-out
-                                    </button>
-                                </form>
+                                <button 
+                                    type="button" 
+                                    onclick="abrirModalCheckout(<?php echo $ocu['id']; ?>, '<?php echo htmlspecialchars($ocu['nombres_apellidos']); ?>', '<?php echo $ocu['nro_pieza']; ?>')"
+                                    class="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors duration-200"
+                                >
+                                    Check-out
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -151,5 +151,90 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 <?php endif; ?>
+
+<!-- Modal de Confirmación de Checkout -->
+<div id="modal_checkout" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+        <div class="p-6">
+            <!-- Header -->
+            <div class="flex items-center justify-center mb-4">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <h3 class="text-2xl font-bold text-center text-noir mb-2">Confirmar Check-out</h3>
+            <p class="text-center text-gray-600 mb-6">¿Está seguro de finalizar la estadía?</p>
+            
+            <!-- Info del huésped -->
+            <div class="bg-mist rounded-xl p-4 mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Huésped:</span>
+                    <span class="text-sm font-semibold text-noir" id="modal_nombre_huesped"></span>
+                </div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Habitación:</span>
+                    <span class="text-sm font-semibold text-noir" id="modal_habitacion"></span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Fecha de salida:</span>
+                    <span class="text-sm font-semibold text-noir"><?php echo date('d/m/Y'); ?></span>
+                </div>
+            </div>
+            
+            <!-- Buttons -->
+            <div class="flex gap-3">
+                <button 
+                    type="button" 
+                    onclick="cerrarModalCheckout()"
+                    class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200"
+                >
+                    Cancelar
+                </button>
+                <button 
+                    type="button" 
+                    onclick="confirmarCheckout()"
+                    class="flex-1 px-6 py-3 bg-red-500 rounded-xl text-white font-semibold hover:bg-red-600 transition-all duration-200 shadow-lg"
+                >
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario oculto para checkout -->
+<form id="form_checkout" method="POST" style="display: none;">
+    <input type="hidden" name="ocupacion_id" id="checkout_ocupacion_id">
+    <input type="hidden" name="fecha_salida" value="<?php echo date('Y-m-d'); ?>">
+    <input type="hidden" name="finalizar_ocupacion" value="1">
+</form>
+
+<script>
+function abrirModalCheckout(ocupacionId, nombreHuesped, habitacion) {
+    document.getElementById('modal_nombre_huesped').textContent = nombreHuesped;
+    document.getElementById('modal_habitacion').textContent = habitacion;
+    document.getElementById('checkout_ocupacion_id').value = ocupacionId;
+    document.getElementById('modal_checkout').classList.remove('hidden');
+}
+
+function cerrarModalCheckout() {
+    document.getElementById('modal_checkout').classList.add('hidden');
+}
+
+function confirmarCheckout() {
+    document.getElementById('form_checkout').submit();
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('modal_checkout').addEventListener('click', function(e) {
+    if (e.target === this) {
+        cerrarModalCheckout();
+    }
+});
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

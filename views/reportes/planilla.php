@@ -20,7 +20,7 @@ if (isset($_GET['filtrar'])) {
             FROM registro_ocupacion ro
             INNER JOIN huespedes h ON ro.huesped_id = h.id
             WHERE ro.fecha_ingreso BETWEEN :fi AND :ff
-            ORDER BY ro.fecha_ingreso DESC";
+            ORDER BY ro.id ASC";
     
     $conn = getConnection();
     $stmt = $conn->prepare($sql);
@@ -35,7 +35,7 @@ if (isset($_GET['filtrar'])) {
             h.estado_civil, h.nacionalidad, h.profesion, h.objeto, h.procedencia
             FROM registro_ocupacion ro
             INNER JOIN huespedes h ON ro.huesped_id = h.id
-            ORDER BY ro.fecha_ingreso DESC
+            ORDER BY ro.id ASC
             LIMIT 100";
     
     $conn = getConnection();
@@ -116,6 +116,15 @@ include __DIR__ . '/../../includes/header.php';
         .planilla-print {
             max-width: 100%;
             overflow-x: auto;
+        }
+        
+        .dark .planilla-print * {
+            color: white !important;
+        }
+        
+        .dark .planilla-print td,
+        .dark .planilla-print th {
+            border-color: #666 !important;
         }
         
         .print-table {

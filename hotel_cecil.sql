@@ -40,6 +40,31 @@ CREATE TABLE `egresos` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `usuarios`
+--
+
+CREATE TABLE `usuarios` (
+  `id` int(11) NOT NULL,
+  `usuario` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `nombre_completo` varchar(255) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ultimo_acceso` datetime DEFAULT NULL,
+  `activo` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `usuarios`
+-- Usuario: Hotel Cecil
+-- Contraseña: rodolfo106control (hasheada con PASSWORD_DEFAULT de PHP)
+--
+
+INSERT INTO `usuarios` (`id`, `usuario`, `password`, `nombre_completo`, `activo`) VALUES
+(1, 'Hotel Cecil', '$2y$10$KtVhWU3au1rkpbMUIX/UUu7QUYn0OviukezCp3EHyANfJB2Ykz6B2', 'Hotel Cecil - Administrador', 1);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `habitaciones`
 --
 
@@ -227,6 +252,13 @@ ALTER TABLE `registro_ocupacion`
   ADD KEY `idx_estado` (`estado`);
 
 --
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `usuario` (`usuario`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -265,6 +297,12 @@ ALTER TABLE `pagos_qr`
 --
 ALTER TABLE `registro_ocupacion`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Restricciones para tablas volcadas

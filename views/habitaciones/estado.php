@@ -62,6 +62,10 @@ body {
     background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
 }
 
+.dark body {
+    background: linear-gradient(135deg, #0a0a0a 0%, #171717 100%);
+}
+
 .glass-card {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
@@ -70,37 +74,72 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
 }
 
+.dark .glass-card {
+    background: rgba(23, 23, 23, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
 .room-cell {
     aspect-ratio: 1;
-    border: 1px solid #e5e5e5;
+    border: 2px solid #e5e5e5;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     position: relative;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
 }
 
 .room-cell:hover {
     border-color: #000;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
 }
 
+/* Estados con todo el fondo de color para máxima visibilidad */
 .room-cell.disponible { 
-    border-left: 3px solid #10b981;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(16, 185, 129, 0.03) 100%);
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-color: #10b981;
 }
 .room-cell.ocupado { 
-    border-left: 3px solid #ef4444;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(239, 68, 68, 0.03) 100%);
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-color: #ef4444;
 }
 .room-cell.limpieza { 
-    border-left: 3px solid #f59e0b;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 158, 11, 0.03) 100%);
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #f59e0b;
 }
 .room-cell.mantenimiento { 
-    border-left: 3px solid #6b7280;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(107, 114, 128, 0.03) 100%);
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    border-color: #6b7280;
+}
+
+/* Dark mode para habitaciones */
+.dark .room-cell {
+    border: 2px solid #374151;
+}
+
+.dark .room-cell:hover {
+    border-color: #fff;
+    box-shadow: 0 4px 16px rgba(255, 255, 255, 0.12);
+}
+
+.dark .room-cell.disponible { 
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+    border-color: #10b981;
+}
+.dark .room-cell.ocupado { 
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border-color: #ef4444;
+}
+.dark .room-cell.limpieza { 
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+    border-color: #f59e0b;
+}
+.dark .room-cell.mantenimiento { 
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+    border-color: #9ca3af;
 }
 
 .floor-label {
@@ -112,24 +151,28 @@ body {
 }
 
 .status-dot {
-    width: 8px;
-    height: 8px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     display: inline-block;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9);
 }
 
 .status-dot.disponible { 
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 0 0 3px #d1fae5;
 }
 .status-dot.ocupado { 
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 0 0 3px #fee2e2;
 }
 .status-dot.limpieza { 
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 0 0 3px #fef3c7;
 }
 .status-dot.mantenimiento { 
     background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    box-shadow: 0 0 0 3px #e5e7eb;
 }
 
 .modal-overlay {
@@ -190,16 +233,29 @@ body {
 }
 
 .legend-item {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.6);
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: 2px solid rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.dark .legend-item {
+    background: rgba(23, 23, 23, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .legend-item:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 1);
     transform: translateY(-1px);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.dark .legend-item:hover {
+    background: rgba(30, 30, 30, 1);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 </style>
 
@@ -208,8 +264,8 @@ body {
     <!-- Header -->
     <div class="flex items-center justify-between mb-12">
         <div>
-            <h1 class="text-3xl font-light tracking-tight text-gray-900 mb-1">Estado de Habitaciones</h1>
-            <p class="text-sm text-gray-500">Hotel Cecil</p>
+            <h1 class="text-3xl font-light tracking-tight text-gray-900 dark:text-white mb-1">Estado de Habitaciones</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Hotel Cecil</p>
         </div>
         <a href="<?php echo BASE_PATH; ?>/index.php" class="btn-primary inline-block" style="text-decoration: none;">
             ← Inicio
@@ -218,31 +274,31 @@ body {
 
     <?php if (isset($mensaje)): ?>
     <div class="mb-8 glass-card px-6 py-4">
-        <p class="text-sm <?php echo $tipo_mensaje === 'success' ? 'text-green-900' : 'text-red-900'; ?>"><?php echo $mensaje; ?></p>
+        <p class="text-sm <?php echo $tipo_mensaje === 'success' ? 'text-green-900 dark:text-green-300' : 'text-red-900 dark:text-red-300'; ?>"><?php echo $mensaje; ?></p>
     </div>
     <?php endif; ?>
 
     <!-- Leyenda -->
-    <div class="flex items-center gap-3 mb-12 text-sm flex-wrap">
-        <div class="legend-item flex items-center gap-2">
+    <div class="flex items-center gap-4 mb-12 text-sm flex-wrap">
+        <div class="legend-item flex items-center gap-3 rounded-xl">
             <span class="status-dot disponible"></span>
-            <span class="text-gray-700">Disponible</span>
-            <span class="text-gray-400 font-light ml-1"><?php echo $total_disponibles; ?></span>
+            <span class="text-gray-900 dark:text-white font-semibold">Disponible</span>
+            <span class="text-gray-500 dark:text-gray-400 font-medium ml-1">(<?php echo $total_disponibles; ?>)</span>
         </div>
-        <div class="legend-item flex items-center gap-2">
+        <div class="legend-item flex items-center gap-3 rounded-xl">
             <span class="status-dot ocupado"></span>
-            <span class="text-gray-700">Ocupada</span>
-            <span class="text-gray-400 font-light ml-1"><?php echo $total_ocupadas; ?></span>
+            <span class="text-gray-900 dark:text-white font-semibold">Ocupada</span>
+            <span class="text-gray-500 dark:text-gray-400 font-medium ml-1">(<?php echo $total_ocupadas; ?>)</span>
         </div>
-        <div class="legend-item flex items-center gap-2">
+        <div class="legend-item flex items-center gap-3 rounded-xl">
             <span class="status-dot limpieza"></span>
-            <span class="text-gray-700">Limpieza</span>
-            <span class="text-gray-400 font-light ml-1"><?php echo $total_limpieza; ?></span>
+            <span class="text-gray-900 dark:text-white font-semibold">Limpieza</span>
+            <span class="text-gray-500 dark:text-gray-400 font-medium ml-1">(<?php echo $total_limpieza; ?>)</span>
         </div>
-        <div class="legend-item flex items-center gap-2">
+        <div class="legend-item flex items-center gap-3 rounded-xl">
             <span class="status-dot mantenimiento"></span>
-            <span class="text-gray-700">Mantenimiento</span>
-            <span class="text-gray-400 font-light ml-1"><?php echo $total_mantenimiento; ?></span>
+            <span class="text-gray-900 dark:text-white font-semibold">Mantenimiento</span>
+            <span class="text-gray-500 dark:text-gray-400 font-medium ml-1">(<?php echo $total_mantenimiento; ?>)</span>
         </div>
     </div>
 
@@ -261,8 +317,8 @@ body {
             <div class="room-cell <?php echo $hab['estado']; ?>" 
                  onclick="openModal(<?php echo htmlspecialchars(json_encode($hab)); ?>)">
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <span class="text-lg font-light text-gray-900"><?php echo $hab['numero']; ?></span>
-                    <span class="text-xs text-gray-400 mt-0.5"><?php echo $hab['tipo']; ?></span>
+                    <span class="text-2xl font-semibold text-gray-900 dark:text-white"><?php echo $hab['numero']; ?></span>
+                    <span class="text-xs text-gray-600 dark:text-gray-300 mt-1 font-medium"><?php echo $hab['tipo']; ?></span>
                 </div>
             </div>
             <?php endforeach; ?>

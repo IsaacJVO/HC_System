@@ -1,3 +1,24 @@
+<?php
+// Verificación de sesión
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Si no está logueado, redirigir al login
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: ' . BASE_URL . '/login.php?error=unauthorized');
+    exit;
+}
+
+// Verificar timeout de sesión (4 horas)
+$timeout_duration = 14400; // 4 horas en segundos
+if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > $timeout_duration) {
+    session_unset();
+    session_destroy();
+    header('Location: ' . BASE_URL . '/login.php?error=timeout');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="es" class="">
 <head>
@@ -109,6 +130,11 @@
                 
                 <!-- Desktop Navigation -->
                 <div class="hidden lg:flex items-center space-x-1">
+                    <!-- Usuario logueado -->
+                    <div class="mr-3 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                        <span class="text-xs font-medium text-gray-600 dark:text-gray-400">👤 <?php echo htmlspecialchars($_SESSION['usuario']); ?></span>
+                    </div>
+                    
                     <!-- Dark Mode Toggle -->
                     <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors mr-2" title="Toggle dark mode">
                         <svg id="theme-toggle-light-icon" class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
@@ -118,6 +144,18 @@
                             <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
                         </svg>
                     </button>
+                    
+                    <!-- Botón Logout -->
+                    <a href="<?php echo BASE_PATH; ?>/controllers/auth.php?action=logout" 
+                       onclick="return confirm('¿Está seguro que desea cerrar sesión?')"
+                       class="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group" 
+                       title="Cerrar Sesión">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </a>
+                    
+                    <div class="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-2"></div>
                     
                     <a href="<?php echo BASE_PATH; ?>/index.php" class="nav-link px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-noir dark:hover:text-white">
                         Dashboard
@@ -156,45 +194,63 @@
                         </button>
                         <div class="absolute left-0 mt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 animate-slide-down">
                             <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/ingresos.php" class="block px-5 py-3.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors duration-150 group/item">
+                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/ingresos.php" class="block px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 transition-colors duration-150 group/item">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover/item:bg-green-500 transition-colors">
-                                            <svg class="w-5 h-5 text-green-600 group-hover/item:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
                                             </svg>
                                         </div>
-                                        <div>
-                                            <div class="font-semibold">Ingresos Extras</div>
-                                            <div class="text-xs text-gray-500">Ganancias adicionales</div>
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900 dark:text-white">Ingresos Extras</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-500">Ganancias adicionales</div>
                                         </div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-green-500 opacity-60"></div>
                                     </div>
                                 </a>
-                                <div class="border-t border-gray-100"></div>
-                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/egresos.php" class="block px-5 py-3.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 group/item">
+                                <div class="border-t border-gray-100 dark:border-gray-800"></div>
+                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/egresos.php" class="block px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 transition-colors duration-150 group/item">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center group-hover/item:bg-red-500 transition-colors">
-                                            <svg class="w-5 h-5 text-red-600 group-hover/item:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                        <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
                                             </svg>
                                         </div>
-                                        <div>
-                                            <div class="font-semibold">Egresos</div>
-                                            <div class="text-xs text-gray-500">Salidas de caja</div>
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900 dark:text-white">Egresos</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-500">Salidas de caja</div>
                                         </div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-red-500 opacity-60"></div>
                                     </div>
                                 </a>
-                                <div class="border-t border-gray-100"></div>
-                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/resumen.php" class="block px-5 py-3.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 group/item">
+                                <div class="border-t border-gray-100 dark:border-gray-800"></div>
+                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/pagos_qr.php" class="block px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 transition-colors duration-150 group/item">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover/item:bg-blue-500 transition-colors">
-                                            <svg class="w-5 h-5 text-blue-600 group-hover/item:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900 dark:text-white">Pagos QR</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-500">Transferencias directas</div>
+                                        </div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-purple-500 opacity-60"></div>
+                                    </div>
+                                </a>
+                                <div class="border-t border-gray-100 dark:border-gray-800"></div>
+                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/resumen.php" class="block px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 transition-colors duration-150 group/item">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                                             </svg>
                                         </div>
-                                        <div>
-                                            <div class="font-semibold">Resumen</div>
-                                            <div class="text-xs text-gray-500">Ver balance general</div>
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900 dark:text-white">Resumen</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-500">Ver balance general</div>
                                         </div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-60"></div>
                                     </div>
                                 </a>
                             </div>
@@ -236,6 +292,9 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
             <div class="px-6 py-4 space-y-1">
+                <div class="px-4 py-3 mb-3 rounded-lg bg-gray-100 dark:bg-gray-800">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">👤 <?php echo htmlspecialchars($_SESSION['usuario']); ?></span>
+                </div>
                 <a href="<?php echo BASE_PATH; ?>/index.php" class="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Dashboard</a>
                 <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Huéspedes</div>
                 <a href="<?php echo BASE_PATH; ?>/views/huespedes/nuevo.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Nuevo Registro</a>
@@ -248,6 +307,13 @@
                 <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Habitaciones</div>
                 <a href="<?php echo BASE_PATH; ?>/views/habitaciones/estado.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Estado</a>
                 <a href="<?php echo BASE_PATH; ?>/views/reportes/planilla.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Reportes</a>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <a href="<?php echo BASE_PATH; ?>/controllers/auth.php?action=logout" 
+                       onclick="return confirm('¿Está seguro que desea cerrar sesión?')"
+                       class="block px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        🚪 Cerrar Sesión
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
@@ -273,5 +339,5 @@
     </script>
     
     <!-- Main Content Container -->
-    <div class="pt-20">
+    <div class="pt-12">
         <div class="max-w-7xl mx-auto px-6 py-12">
