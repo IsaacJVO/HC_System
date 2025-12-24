@@ -88,17 +88,33 @@ include __DIR__ . '/../../includes/header.php';
 
 <style>
 @media print {
-    body {
-        background: white !important;
+    /* Ocultar todo el body por defecto */
+    body * {
+        visibility: hidden;
     }
     
-    .no-print {
-        display: none !important;
+    /* Mostrar solo la tabla del parte diario */
+    .parte-diario,
+    .parte-diario * {
+        visibility: visible;
     }
     
     .parte-diario {
+        position: absolute;
+        left: 0;
+        top: 0;
         width: 100%;
-        page-break-after: auto;
+        background: white !important;
+        padding: 10px;
+    }
+    
+    /* Ocultar elementos no deseados */
+    .no-print,
+    header,
+    nav,
+    footer,
+    .sidebar {
+        display: none !important;
     }
     
     table {
@@ -112,7 +128,18 @@ include __DIR__ . '/../../includes/header.php';
     
     @page {
         size: landscape;
-        margin: 1cm;
+        margin: 1cm 1cm 1cm 1cm;
+    }
+    
+    /* Eliminar encabezados y pies de página del navegador */
+    html {
+        margin: 0 !important;
+    }
+    
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
     }
     
     /* Forzar impresión de colores */

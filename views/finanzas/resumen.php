@@ -316,7 +316,7 @@ include __DIR__ . '/../../includes/header.php';
                         <td class="py-1.5 text-right font-bold text-red-700 dark:text-red-400">- Bs. <?php echo formatMoney($total_egresos); ?></td>
                     </tr>
                     <tr class="bg-yellow-100 dark:bg-yellow-900/30 border-y-2 border-yellow-600">
-                        <td class="py-2 font-bold text-base">EFECTIVO A ENTREGAR AL PROPIETARIO (A-B)</td>
+                        <td class="py-2 font-bold text-base">EFECTIVO A ENTREGAR A DON RODOLFO</td>
                         <td class="py-2 text-right font-bold text-xl text-yellow-900 dark:text-yellow-300">Bs. <?php echo formatMoney($balance_recepcionista); ?></td>
                     </tr>
                     <tr class="border-b border-gray-200 dark:border-gray-700">
@@ -324,33 +324,15 @@ include __DIR__ . '/../../includes/header.php';
                         <td class="py-1.5 text-right font-bold text-blue-700 dark:text-blue-400">Bs. <?php echo formatMoney($total_qr); ?></td>
                     </tr>
                     <tr class="bg-gray-800 dark:bg-gray-700 text-white border-t-2 border-gray-800">
-                        <td class="py-2 font-bold text-base">INGRESO BRUTO TOTAL DEL HOTEL (A+C)</td>
+                        <td class="py-2 font-bold text-base">INGRESO BRUTO TOTAL DEL HOTEL</td>
                         <td class="py-2 text-right font-bold text-xl">Bs. <?php echo formatMoney($total_efectivo + $total_qr); ?></td>
                     </tr>
                     <tr class="bg-gray-100 dark:bg-gray-800">
-                        <td class="py-2 font-bold text-base">UTILIDAD NETA DEL PERÍODO (A+C-B)</td>
+                        <td class="py-2 font-bold text-base">UTILIDAD NETA DEL PERÍODO</td>
                         <td class="py-2 text-right font-bold text-xl text-green-700 dark:text-green-400">Bs. <?php echo formatMoney($total_efectivo + $total_qr - $total_egresos); ?></td>
                     </tr>
                 </tbody>
             </table>
-            
-            <div class="grid grid-cols-3 gap-2 text-[10px] bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                <div>
-                    <p class="font-semibold text-gray-700 dark:text-gray-300">Transacciones:</p>
-                    <p class="text-gray-600 dark:text-gray-400"><?php echo count($ingresos) + count($egresos); ?> movimientos</p>
-                </div>
-                <div>
-                    <p class="font-semibold text-gray-700 dark:text-gray-300">Ticket promedio:</p>
-                    <p class="text-gray-600 dark:text-gray-400">Bs. <?php echo count($ingresos) > 0 ? formatMoney(($total_efectivo + $total_qr) / count($ingresos)) : '0.00'; ?></p>
-                </div>
-                <div>
-                    <p class="font-semibold text-gray-700 dark:text-gray-300">Días del período:</p>
-                    <p class="text-gray-600 dark:text-gray-400"><?php 
-                        $dias = (strtotime($fecha_fin) - strtotime($fecha_inicio)) / 86400 + 1;
-                        echo round($dias) . ' días';
-                    ?></p>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -362,14 +344,12 @@ include __DIR__ . '/../../includes/header.php';
                     <p class="font-bold text-gray-900 dark:text-white">RECEPCIONISTA</p>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">Isaac Vargas</p>
-                <p class="text-[10px] text-gray-500 dark:text-gray-500">CI: __________________</p>
             </div>
             <div>
                 <div class="border-t border-gray-800 dark:border-gray-600 pt-1 mb-1 mt-12">
                     <p class="font-bold text-gray-900 dark:text-white">PROPIETARIO</p>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">Don Rodolfo</p>
-                <p class="text-[10px] text-gray-500 dark:text-gray-500">CI: __________________</p>
             </div>
         </div>
         
@@ -383,50 +363,35 @@ include __DIR__ . '/../../includes/header.php';
 
 <!-- Vista rápida en pantalla (no se imprime) -->
 <div class="no-print mt-8">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-green-50 to-white">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-noir">Efectivo (Tu Caja)</h3>
-                    <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                        <span class="text-xl">💵</span>
-                    </div>
-                </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Efectivo (Caja) -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium">Efectivo (Caja)</span>
+                <i class="fas fa-money-bill-wave text-gray-400 dark:text-gray-500 text-sm"></i>
             </div>
-            <div class="p-6">
-                <p class="text-3xl font-bold text-green-600">Bs. <?php echo formatMoney($total_efectivo); ?></p>
-                <p class="text-sm text-gray-500 mt-2">Ingresos en efectivo</p>
-            </div>
+            <p class="text-3xl font-semibold text-gray-900 dark:text-white">Bs. <?php echo formatMoney($total_efectivo); ?></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Ingresos en efectivo</p>
         </div>
 
-        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-noir">QR (Dueño)</h3>
-                    <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <span class="text-xl">📱</span>
-                    </div>
-                </div>
+        <!-- QR (Don Rodolfo) -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium">QR (Don Rodolfo)</span>
+                <i class="fas fa-qrcode text-gray-400 dark:text-gray-500 text-sm"></i>
             </div>
-            <div class="p-6">
-                <p class="text-3xl font-bold text-blue-600">Bs. <?php echo formatMoney($total_qr); ?></p>
-                <p class="text-sm text-gray-500 mt-2">Pagos directos al dueño</p>
-            </div>
+            <p class="text-3xl font-semibold text-gray-900 dark:text-white">Bs. <?php echo formatMoney($total_qr); ?></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Pagos directos a Don Rodolfo</p>
         </div>
 
-        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-white">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-noir">A Entregar</h3>
-                    <div class="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
-                        <span class="text-xl">🤝</span>
-                    </div>
-                </div>
+        <!-- A Entregar -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium">A Entregar</span>
+                <i class="fas fa-hand-holding-usd text-gray-400 dark:text-gray-500 text-sm"></i>
             </div>
-            <div class="p-6">
-                <p class="text-3xl font-bold text-yellow-600">Bs. <?php echo formatMoney($balance_recepcionista); ?></p>
-                <p class="text-sm text-gray-500 mt-2">Efectivo - Egresos</p>
-            </div>
+            <p class="text-3xl font-semibold text-gray-900 dark:text-white">Bs. <?php echo formatMoney($balance_recepcionista); ?></p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Efectivo - Egresos</p>
         </div>
     </div>
 </div>
