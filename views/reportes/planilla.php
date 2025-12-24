@@ -183,7 +183,7 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
                 <div class="flex items-end">
                     <button type="submit" name="filtrar" class="w-full px-4 py-2.5 bg-noir text-white font-medium rounded-lg hover:bg-gray-800 transition-all">
-                        🔍 Filtrar
+                        Filtrar
                     </button>
                 </div>
             </form>
