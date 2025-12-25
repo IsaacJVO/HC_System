@@ -14,9 +14,13 @@ $inventario->inicializarHabitaciones($numeros);
 // Procesar actualización masiva
 $mensaje = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_masivo'])) {
-    $habitaciones_data = $_POST['hab'] ?? [];
-    $errores = 0;
-    $actualizados = 0;
+    // Solo administradores pueden hacer actualización masiva
+    if (!esAdmin()) {
+        $mensaje = "⚠ No tienes permisos para realizar esta acción";
+    } else {
+        $habitaciones_data = $_POST['hab'] ?? [];
+        $errores = 0;
+        $actualizados = 0;
     
     foreach ($habitaciones_data as $numero => $datos) {
         $datos_completos = [
@@ -54,16 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_masivo'])) {
         }
     }
     
-    if ($errores === 0) {
-        $mensaje = "✓ Inventario actualizado: {$actualizados} habitaciones";
-    } else {
-        $mensaje = "⚠ Actualizado: {$actualizados} habitaciones, {$errores} errores";
+        if ($errores === 0) {
+            $mensaje = "✓ Inventario actualizado: {$actualizados} habitaciones";
+        } else {
+            $mensaje = "⚠ Actualizado: {$actualizados} habitaciones, {$errores} errores";
+        }
     }
 }
 
 // Procesar actualización individual
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_inventario'])) {
     $habitacion_numero = $_POST['habitacion_numero'];
+    $tipo = $_POST['tipo'] ?? 'habitacion';
+    
+    // Solo administradores pueden editar el almacén
+    if ($tipo === 'almacen' && !esAdmin()) {
+        $mensaje = "⚠ No tienes permisos para editar el almacén";
+    } else {
     
     $datos = [
         'habitacion_numero' => $habitacion_numero,
@@ -93,10 +104,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_inventario'])
         'alfombras_almacen' => intval($_POST['alfombras_almacen'] ?? 0)
     ];
     
-    if ($inventario->guardar($datos)) {
-        $mensaje = "✓ Inventario actualizado correctamente";
-    } else {
-        $mensaje = "✗ Error al actualizar inventario";
+        if ($inventario->guardar($datos)) {
+            $mensaje = "✓ Inventario actualizado correctamente";
+        } else {
+            $mensaje = "✗ Error al actualizar inventario";
+        }
     }
 }
 
@@ -133,10 +145,12 @@ include __DIR__ . '/../../includes/header.php';
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Inventario de Habitaciones</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-2">Control físico de elementos en cada habitación</p>
         </div>
+        <?php if (esAdmin()): ?>
         <button onclick="toggleEdicionMasiva()" 
                 class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
             <i class="fas fa-table mr-2"></i>Edición Masiva
         </button>
+        <?php endif; ?>
     </div>
 
     <?php if ($mensaje): ?>
@@ -154,10 +168,12 @@ include __DIR__ . '/../../includes/header.php';
                 </h2>
                 <p class="text-xs text-teal-700 dark:text-teal-400 mt-1">Stock de ropa blanca y elementos extras</p>
             </div>
+            <?php if (esAdmin()): ?>
             <button onclick="abrirModalInventario('ALMACEN', 'almacen')" 
                     class="px-4 py-2 bg-teal-600 hover:bg-teal-700 hover:scale-105 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
                 <i class="fas fa-edit mr-2"></i>Editar
             </button>
+            <?php endif; ?>
         </div>
         
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">

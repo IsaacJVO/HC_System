@@ -122,10 +122,8 @@ if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > $time
             <div class="flex items-center justify-between h-20">
                 <!-- Logo Minimalista -->
                 <a href="<?php echo BASE_PATH; ?>/index.php" class="flex items-center space-x-3 group">
-                    <div class="w-10 h-10 bg-noir dark:bg-white rounded-lg flex items-center justify-center group-hover:bg-accent transition-colors duration-300">
-                        <span class="text-white dark:text-noir font-bold text-lg">HC</span>
-                    </div>
-                    <span class="text-xl font-semibold text-noir dark:text-white tracking-tight">Hotel Cecil</span>
+                    <img src="<?php echo BASE_PATH; ?>/assets/img/logo.png" alt="Hotel Cecil" class="h-10 w-auto transition-transform duration-300 group-hover:scale-105">
+                    <span class="text-4xl font-semibold text-noir dark:text-white tracking-tight">Hotel Cecil</span>
                 </a>
                 
                 <!-- Desktop Navigation -->

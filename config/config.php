@@ -32,6 +32,8 @@ function getConnection() {
                     PDO::ATTR_EMULATE_PREPARES => false
                 ]
             );
+            // Establecer charset explícitamente
+            $conn->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
         } catch (PDOException $e) {
             die("Error de conexión: " . $e->getMessage());
         }
@@ -57,6 +59,11 @@ function formatDate($date) {
 // Función para formatear montos
 function formatMoney($amount) {
     return number_format($amount, 2, '.', ',');
+}
+
+// Función para verificar si el usuario es administrador
+function esAdmin() {
+    return isset($_SESSION['rol']) && $_SESSION['rol'] === 'administrador';
 }
 
 // Iniciar sesión si no está iniciada

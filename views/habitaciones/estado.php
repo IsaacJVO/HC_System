@@ -1,10 +1,18 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../models/Habitacion.php';
+require_once __DIR__ . '/../../models/Mantenimiento.php';
 
 $page_title = 'Gestión de Estados';
 
 $habitacionModel = new Habitacion();
+$mantenimientoModel = new Mantenimiento();
+
+// Obtener mantenimientos activos por habitación
+$mantenimientos_activos = [];
+foreach ($mantenimientoModel->obtenerActivos() as $mant) {
+    $mantenimientos_activos[$mant['habitacion_numero']] = $mant;
+}
 
 // Procesar cambios de estado
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['habitacion_id'])) {
@@ -315,10 +323,13 @@ body {
         <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
             <?php foreach ($por_piso[$num_piso] as $hab): ?>
             <div class="room-cell <?php echo $hab['estado']; ?>" 
-                 onclick="openModal(<?php echo htmlspecialchars(json_encode($hab)); ?>)">
+                 onclick='openModal(<?php echo json_encode($hab, JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?php echo isset($mantenimientos_activos[$hab['numero']]) ? json_encode($mantenimientos_activos[$hab['numero']], JSON_HEX_APOS | JSON_HEX_QUOT) : 'null'; ?>)'>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                     <span class="text-2xl font-semibold text-gray-900 dark:text-white"><?php echo $hab['numero']; ?></span>
                     <span class="text-xs text-gray-600 dark:text-gray-300 mt-1 font-medium"><?php echo $hab['tipo']; ?></span>
+                    <?php if (isset($mantenimientos_activos[$hab['numero']])): ?>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full animate-pulse" title="Con mantenimiento activo"></span>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -339,11 +350,34 @@ body {
             <p class="text-sm text-gray-500">Bs. <span id="m-precio"></span> por noche</p>
         </div>
         
-        <div class="mb-6 pb-6 border-b border-gray-200">
+        <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
             <p class="text-xs uppercase tracking-wider text-gray-400 mb-2">Estado actual</p>
             <div class="flex items-center gap-2">
                 <span class="status-dot" id="m-status-dot"></span>
-                <span class="text-sm text-gray-900" id="m-status-text"></span>
+                <span class="text-sm text-gray-900 dark:text-white" id="m-status-text"></span>
+            </div>
+        </div>
+        
+        <!-- Información de mantenimiento si existe -->
+        <div id="m-mantenimiento-info" class="hidden mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <div class="flex items-start gap-2 mb-2">
+                    <i class="fas fa-tools text-orange-600 dark:text-orange-400 mt-0.5"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-orange-900 dark:text-orange-300" id="m-mant-titulo"></p>
+                        <p class="text-xs text-orange-700 dark:text-orange-400 mt-1" id="m-mant-tipo"></p>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full font-semibold" id="m-mant-prioridad"></span>
+                </div>
+                <p class="text-xs text-gray-700 dark:text-gray-300 mt-2" id="m-mant-descripcion"></p>
+                <div class="mt-3 pt-3 border-t border-orange-200 dark:border-orange-700 flex items-center justify-between text-xs">
+                    <span class="text-gray-600 dark:text-gray-400">Estado: <strong id="m-mant-estado"></strong></span>
+                    <span class="text-gray-600 dark:text-gray-400">Inicio: <strong id="m-mant-fecha"></strong></span>
+                </div>
+                <a href="<?php echo BASE_PATH; ?>/views/habitaciones/mantenimiento.php" 
+                   class="mt-3 block text-center text-xs text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 font-medium">
+                    Ver todos los mantenimientos →
+                </a>
             </div>
         </div>
         
@@ -379,7 +413,14 @@ const statusMap = {
     'mantenimiento': { text: 'En mantenimiento', class: 'mantenimiento' }
 };
 
-function openModal(room) {
+const prioridadMap = {
+    'baja': { text: 'Baja', class: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' },
+    'media': { text: 'Media', class: 'bg-blue-200 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' },
+    'alta': { text: 'Alta', class: 'bg-orange-200 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' },
+    'urgente': { text: 'Urgente', class: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-300' }
+};
+
+function openModal(room, mantenimiento = null) {
     document.getElementById('m-numero').textContent = room.numero;
     document.getElementById('m-tipo').textContent = room.tipo;
     document.getElementById('m-precio').textContent = parseFloat(room.precio_dia).toFixed(2);
@@ -388,6 +429,24 @@ function openModal(room) {
     const status = statusMap[room.estado];
     document.getElementById('m-status-dot').className = 'status-dot ' + status.class;
     document.getElementById('m-status-text').textContent = status.text;
+    
+    // Mostrar información de mantenimiento si existe
+    const mantInfo = document.getElementById('m-mantenimiento-info');
+    if (mantenimiento && room.estado === 'mantenimiento') {
+        mantInfo.classList.remove('hidden');
+        document.getElementById('m-mant-titulo').textContent = mantenimiento.titulo;
+        document.getElementById('m-mant-tipo').textContent = mantenimiento.tipo.charAt(0).toUpperCase() + mantenimiento.tipo.slice(1);
+        document.getElementById('m-mant-descripcion').textContent = mantenimiento.descripcion;
+        document.getElementById('m-mant-estado').textContent = mantenimiento.estado.replace('_', ' ');
+        document.getElementById('m-mant-fecha').textContent = new Date(mantenimiento.fecha_inicio).toLocaleDateString('es-BO');
+        
+        const prioridad = prioridadMap[mantenimiento.prioridad];
+        const prioridadEl = document.getElementById('m-mant-prioridad');
+        prioridadEl.textContent = prioridad.text;
+        prioridadEl.className = 'text-xs px-2 py-1 rounded-full font-semibold ' + prioridad.class;
+    } else {
+        mantInfo.classList.add('hidden');
+    }
     
     document.getElementById('modal').classList.remove('hidden');
 }

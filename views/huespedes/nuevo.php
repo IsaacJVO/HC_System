@@ -47,6 +47,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Habitación no encontrada');
         }
         
+        // Validar capacidad de habitación vs número de personas
+        $tipo_hab = $habitacion['tipo'];
+        $capacidad_maxima = 2; // Por defecto
+        if ($tipo_hab == 'Individual') $capacidad_maxima = 1;
+        elseif ($tipo_hab == 'Doble' || $tipo_hab == 'Matrimonial') $capacidad_maxima = 2;
+        elseif ($tipo_hab == 'Triple') $capacidad_maxima = 3;
+        elseif ($tipo_hab == 'Familiar' || $tipo_hab == 'Suite') $capacidad_maxima = 4;
+        
+        $num_acompanantes = 0;
+        if (isset($_POST['acomp_ci']) && is_array($_POST['acomp_ci'])) {
+            foreach ($_POST['acomp_ci'] as $ci) {
+                if (!empty($ci)) $num_acompanantes++;
+            }
+        }
+        
+        $total_personas = 1 + $num_acompanantes; // 1 titular + acompañantes
+        if ($total_personas > $capacidad_maxima) {
+            throw new Exception("La habitación {$tipo_hab} solo permite {$capacidad_maxima} persona(s). Usted intentó registrar {$total_personas} persona(s).");
+        }
+        
         // Calcular fecha de salida estimada
         // Si entra el 20 y se queda 1 día, sale el 21
         $fecha_ingreso = $_POST['fecha_ingreso'];
@@ -401,8 +421,10 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
                 <button 
                     type="button" 
+                    id="btn_agregar_acompanante"
                     onclick="agregarAcompanante()" 
-                    class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-all duration-200"
+                    disabled
+                    class="px-4 py-2 bg-gray-400 text-white rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200"
                 >
                     + Agregar Acompañante
                 </button>
@@ -436,16 +458,32 @@ include __DIR__ . '/../../includes/header.php';
                     </label>
                     <select 
                         name="nro_pieza" 
+                        id="habitacion_select"
+                        onchange="actualizarCapacidadHabitacion()"
                         required
                         class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir appearance-none bg-white"
                     >
                         <option value="">Seleccione una habitación</option>
                         <?php foreach ($habitaciones as $hab): ?>
-                            <option value="<?php echo $hab['numero']; ?>" <?php echo (isset($_POST['nro_pieza']) && $_POST['nro_pieza'] == $hab['numero']) ? 'selected' : ''; ?>>
+                            <option value="<?php echo $hab['numero']; ?>" 
+                                    data-tipo="<?php echo $hab['tipo']; ?>" 
+                                    data-capacidad="<?php 
+                                        $tipo = $hab['tipo'];
+                                        if ($tipo == 'Individual') echo '1';
+                                        elseif ($tipo == 'Doble' || $tipo == 'Matrimonial') echo '2';
+                                        elseif ($tipo == 'Triple') echo '3';
+                                        elseif ($tipo == 'Familiar' || $tipo == 'Suite') echo '4';
+                                        else echo '2';
+                                    ?>"
+                                    <?php echo (isset($_POST['nro_pieza']) && $_POST['nro_pieza'] == $hab['numero']) ? 'selected' : ''; ?>>
                                 Habitación <?php echo $hab['numero']; ?> - <?php echo $hab['tipo']; ?> - Bs. <?php echo number_format($hab['precio_dia'], 2); ?>/día
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <div id="mensaje_capacidad" class="mt-2 text-sm text-gray-600 hidden">
+                        <i class="fas fa-users mr-1"></i>
+                        <span id="texto_capacidad"></span>
+                    </div>
                 </div>
                 
                 <div class="space-y-2">
@@ -608,14 +646,114 @@ include __DIR__ . '/../../includes/header.php';
 <script>
 let contadorAcompanantes = 0;
 
-// Función para agregar acompañante
+// Función para eliminar acompañante
+function eliminarAcompanante(id) {
+    const elemento = document.getElementById(`acompanante_${id}`);
+    if (elemento) {
+        elemento.remove();
+        
+        // Contar acompañantes restantes
+        const acompanantesRestantes = document.querySelectorAll('[id^="acompanante_"]').length;
+        if (acompanantesRestantes === 0) {
+            document.getElementById('mensaje_sin_acompanantes').style.display = 'block';
+        }
+        
+        // Actualizar estado del botón de agregar acompañante
+        actualizarBotonAcompanante();
+    }
+}
+
+// Variables globales para capacidad
+let capacidadHabitacion = 0;
+let tipoHabitacion = '';
+
+// Función para actualizar capacidad cuando cambia la habitación
+function actualizarCapacidadHabitacion() {
+    const select = document.getElementById('habitacion_select');
+    const opcionSeleccionada = select.options[select.selectedIndex];
+    
+    if (!opcionSeleccionada.value) {
+        // No hay habitación seleccionada
+        capacidadHabitacion = 0;
+        tipoHabitacion = '';
+        document.getElementById('mensaje_capacidad').classList.add('hidden');
+        document.getElementById('btn_agregar_acompanante').disabled = true;
+        document.getElementById('btn_agregar_acompanante').className = 'px-4 py-2 bg-gray-400 text-white rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200';
+        return;
+    }
+    
+    capacidadHabitacion = parseInt(opcionSeleccionada.dataset.capacidad);
+    tipoHabitacion = opcionSeleccionada.dataset.tipo;
+    
+    // Mostrar mensaje de capacidad
+    const mensajeCapacidad = document.getElementById('mensaje_capacidad');
+    const textoCapacidad = document.getElementById('texto_capacidad');
+    
+    let textoPersonas = capacidadHabitacion === 1 ? 'persona' : 'personas';
+    textoCapacidad.textContent = `Habitación ${tipoHabitacion}: Capacidad máxima ${capacidadHabitacion} ${textoPersonas}`;
+    mensajeCapacidad.classList.remove('hidden');
+    
+    // Actualizar estado del botón
+    actualizarBotonAcompanante();
+    
+    // Verificar si hay que eliminar acompañantes excedentes
+    verificarCapacidadExcedida();
+}
+
+// Función para actualizar el botón de agregar acompañante
+function actualizarBotonAcompanante() {
+    const btn = document.getElementById('btn_agregar_acompanante');
+    const numAcompanantesActuales = document.querySelectorAll('[id^="acompanante_"]').length;
+    const totalPersonas = 1 + numAcompanantesActuales; // 1 titular + acompañantes
+    
+    if (capacidadHabitacion === 0) {
+        // No hay habitación seleccionada
+        btn.disabled = true;
+        btn.className = 'px-4 py-2 bg-gray-400 text-white rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200';
+        btn.innerHTML = '+ Agregar Acompañante';
+    } else if (totalPersonas >= capacidadHabitacion) {
+        // Capacidad alcanzada
+        btn.disabled = true;
+        btn.className = 'px-4 py-2 bg-gray-400 text-white rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200';
+        btn.innerHTML = `Capacidad completa (${totalPersonas}/${capacidadHabitacion})`;
+    } else {
+        // Puede agregar más acompañantes
+        btn.disabled = false;
+        btn.className = 'px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-all duration-200';
+        btn.innerHTML = `+ Agregar Acompañante (${totalPersonas}/${capacidadHabitacion})`;
+    }
+}
+
+// Función para verificar si hay acompañantes excedentes y notificar
+function verificarCapacidadExcedida() {
+    const numAcompanantesActuales = document.querySelectorAll('[id^="acompanante_"]').length;
+    const totalPersonas = 1 + numAcompanantesActuales;
+    
+    if (totalPersonas > capacidadHabitacion && capacidadHabitacion > 0) {
+        const exceso = totalPersonas - capacidadHabitacion;
+        alert(`⚠️ ATENCIÓN: La habitación ${tipoHabitacion} solo permite ${capacidadHabitacion} persona(s).\n\nActualmente tiene ${totalPersonas} persona(s) registrada(s).\n\nPor favor elimine ${exceso} acompañante(s) o cambie a una habitación de mayor capacidad.`);
+    }
+}
+
+// Modificar función agregarAcompanante original para actualizar botón
+const agregarAcompananteOriginal = agregarAcompanante;
 function agregarAcompanante() {
+    // Verificar capacidad antes de agregar
+    const numAcompanantesActuales = document.querySelectorAll('[id^="acompanante_"]').length;
+    const totalPersonas = 1 + numAcompanantesActuales;
+    
+    if (totalPersonas >= capacidadHabitacion) {
+        alert(`La habitación ${tipoHabitacion} solo permite ${capacidadHabitacion} persona(s).\n\nNo puede agregar más acompañantes.`);
+        return;
+    }
+    
+    // Llamar función original (código existente)
     contadorAcompanantes++;
     const container = document.getElementById('lista_acompanantes');
     const mensajeSin = document.getElementById('mensaje_sin_acompanantes');
     
     // Ocultar mensaje si es el primer acompañante
-    if (contadorAcompanantes === 1) {
+    if (document.querySelectorAll('[id^="acompanante_"]').length === 0) {
         mensajeSin.style.display = 'none';
     }
     
@@ -700,13 +838,13 @@ function agregarAcompanante() {
                 </div>
                 
                 <div>
-                    <label class="block text-xs font-semibold text-noir mb-1">Relación con Titular</label>
+                    <label class="block text-xs font-semibold text-noir mb-1">Relación</label>
                     <input 
                         type="text" 
-                        name="acomp_relacion[]"
+                        name="acomp_relacion[]" 
                         id="acomp_relacion_${contadorAcompanantes}"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                        placeholder="Ej: Familiar, Amigo, Pareja"
+                        placeholder="Ej: Esposo/a, Hijo/a, Amigo/a"
                     >
                 </div>
             </div>
@@ -714,20 +852,9 @@ function agregarAcompanante() {
     `;
     
     container.insertAdjacentHTML('beforeend', acompananteHTML);
-}
-
-// Función para eliminar acompañante
-function eliminarAcompanante(id) {
-    const elemento = document.getElementById(`acompanante_${id}`);
-    if (elemento) {
-        elemento.remove();
-        
-        // Contar acompañantes restantes
-        const acompanantesRestantes = document.querySelectorAll('[id^="acompanante_"]').length;
-        if (acompanantesRestantes === 0) {
-            document.getElementById('mensaje_sin_acompanantes').style.display = 'block';
-        }
-    }
+    
+    // Actualizar estado del botón después de agregar
+    actualizarBotonAcompanante();
 }
 
 // Función para calcular edad automáticamente

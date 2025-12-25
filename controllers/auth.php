@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         $conn = getConnection();
         
         // Buscar usuario
-        $stmt = $conn->prepare("SELECT id, usuario, password, nombre_completo, activo FROM usuarios WHERE usuario = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, usuario, password, nombre_completo, activo, rol FROM usuarios WHERE usuario = ? LIMIT 1");
         $stmt->execute([$usuario]);
         $user = $stmt->fetch();
         
@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
                 $_SESSION['usuario_id'] = $user['id'];
                 $_SESSION['usuario'] = $user['usuario'];
                 $_SESSION['nombre_completo'] = $user['nombre_completo'];
+                $_SESSION['rol'] = $user['rol'];
                 $_SESSION['login_time'] = time();
                 
                 // Actualizar último acceso
