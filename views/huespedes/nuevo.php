@@ -90,16 +90,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Error al registrar ocupación en la base de datos');
         }
         
+        // Actualizar estado de la habitación a 'ocupada'
+        $conn = getConnection();
+        $sql_update = "UPDATE habitaciones SET estado = 'ocupada' WHERE id = :habitacion_id";
+        $stmt_update = $conn->prepare($sql_update);
+        $stmt_update->execute([':habitacion_id' => $habitacion['id']]);
+        
         // Registrar ingreso automáticamente
         require_once __DIR__ . '/../../models/Finanzas.php';
         $finanzasModel = new Finanzas();
         
         $monto_total = $habitacion['precio_dia'] * $nro_dias;
+        
+        // Aplicar descuento si existe
+        $descuento = 0;
+        $motivo_descuento = '';
+        if (isset($_POST['descuento']) && !empty($_POST['descuento'])) {
+            $descuento = floatval($_POST['descuento']);
+            $monto_total = $monto_total - $descuento;
+            $motivo_descuento = isset($_POST['motivo_descuento']) && !empty($_POST['motivo_descuento']) 
+                ? clean_input($_POST['motivo_descuento']) 
+                : 'Descuento aplicado';
+        }
+        
         $metodo_pago = isset($_POST['metodo_pago']) ? $_POST['metodo_pago'] : 'efectivo';
+        
+        $concepto = 'Pago habitación ' . $_POST['nro_pieza'] . ' - ' . $nro_dias . ' día(s)';
+        if ($descuento > 0) {
+            $concepto .= ' (Descuento: Bs. ' . number_format($descuento, 2) . ' - ' . $motivo_descuento . ')';
+        }
         
         $datos_ingreso = [
             'ocupacion_id' => $ocupacion_id,
-            'concepto' => 'Pago habitación ' . $_POST['nro_pieza'] . ' - ' . $nro_dias . ' día(s)',
+            'concepto' => $concepto,
             'monto' => $monto_total,
             'metodo_pago' => $metodo_pago,
             'fecha' => $fecha_ingreso,
@@ -119,7 +142,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             $finanzasModel->registrarPagoQR($datos_qr);
         }
-                // Registrar acompañantes si existen
+        
+        // Registrar uso de garaje si fue seleccionado
+        if (isset($_POST['usa_garaje']) && $_POST['usa_garaje'] == '1') {
+            require_once __DIR__ . '/../../models/Garaje.php';
+            $garajeModel = new Garaje();
+            
+            $datos_garaje = [
+                'ocupacion_id' => $ocupacion_id,
+                'huesped_nombre' => $_POST['nombres_apellidos'],
+                'fecha' => $fecha_ingreso,
+                'costo' => 10.00,
+                'observaciones' => 'Habitación ' . $_POST['nro_pieza']
+            ];
+            
+            $garajeModel->registrar($datos_garaje);
+        }
+        
+        // Registrar acompañantes si existen
         if (isset($_POST['acomp_ci']) && is_array($_POST['acomp_ci']) && count($_POST['acomp_ci']) > 0) {
             $acomp_count = 0;
             for ($i = 0; $i < count($_POST['acomp_ci']); $i++) {
@@ -198,13 +238,13 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <!-- Page Header -->
-<div class="mb-8">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-4xl font-bold text-noir mb-2">Nuevo Registro</h1>
-            <p class="text-gray-500">Complete la información del huésped y asigne una habitación</p>
+<div class="mb-6 sm:mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div class="flex-1">
+            <h1 class="text-2xl sm:text-4xl font-bold text-noir mb-1 sm:mb-2">Nuevo Registro</h1>
+            <p class="text-sm sm:text-base text-gray-500">Complete la información del huésped y asigne una habitación</p>
         </div>
-        <a href="<?php echo BASE_PATH; ?>/views/huespedes/activos.php" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-mist transition-all duration-200">
+        <a href="<?php echo BASE_PATH; ?>/views/huespedes/activos.php" class="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-mist transition-all duration-200 text-center">
             Cancelar
         </a>
     </div>
@@ -458,8 +498,8 @@ include __DIR__ . '/../../includes/header.php';
                     </label>
                     <select 
                         name="nro_pieza" 
-                        id="habitacion_select"
-                        onchange="actualizarCapacidadHabitacion()"
+                        id="nro_pieza"
+                        onchange="actualizarCapacidadHabitacion(); calcularFechaSalida();"
                         required
                         class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir appearance-none bg-white"
                     >
@@ -475,6 +515,7 @@ include __DIR__ . '/../../includes/header.php';
                                         elseif ($tipo == 'Familiar' || $tipo == 'Suite') echo '4';
                                         else echo '2';
                                     ?>"
+                                    data-precio="<?php echo $hab['precio_dia']; ?>"
                                     <?php echo (isset($_POST['nro_pieza']) && $_POST['nro_pieza'] == $hab['numero']) ? 'selected' : ''; ?>>
                                 Habitación <?php echo $hab['numero']; ?> - <?php echo $hab['tipo']; ?> - Bs. <?php echo number_format($hab['precio_dia'], 2); ?>/día
                             </option>
@@ -608,10 +649,28 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
             </div>
             
-            <!-- Fecha Salida Estimada (calculada) -->
-            <div class="bg-mist rounded-xl p-6 border border-gray-200">
-                <div class="flex items-center justify-between mb-3">
-                    <div>
+            <!-- Garaje (Opcional - Discreto) -->
+            <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        id="usa_garaje"
+                        name="usa_garaje" 
+                        value="1"
+                        class="w-4 h-4 text-gray-900 bg-gray-100 border-gray-300 rounded focus:ring-gray-500 dark:focus:ring-gray-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    >
+                    <div class="flex-1">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Usa garaje</span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Se registrará para control y pago posterior</p>
+                    </div>
+                </label>
+            </div>
+            
+            <!-- Fecha Salida Estimada y Precio Total -->
+            <div class="bg-mist rounded-xl p-4 sm:p-6 border border-gray-200 space-y-4">
+                <!-- Fecha de Salida -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex-1">
                         <label class="block text-sm font-semibold text-noir mb-1">Fecha de Salida Estimada</label>
                         <p class="text-xs text-gray-500">Se calcula automáticamente según los días de estadía</p>
                     </div>
@@ -619,24 +678,87 @@ include __DIR__ . '/../../includes/header.php';
                         type="date" 
                         id="fecha_salida_estimada"
                         readonly
-                        class="px-4 py-3 border border-gray-300 rounded-xl bg-white text-noir font-semibold"
+                        class="w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-xl bg-white text-noir font-semibold"
                     >
                 </div>
-                <div id="mensaje_salida" class="text-sm font-medium text-blue-700 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                <div id="mensaje_salida" class="text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 px-3 py-2 sm:px-4 sm:py-2 rounded-lg border border-blue-200">
                     <i class="fas fa-info-circle mr-1"></i> Complete fecha de ingreso y número de días para calcular
+                </div>
+                
+                <!-- Precio Total -->
+                <div id="precio_total_container" class="hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="block text-sm font-semibold text-green-900 mb-1">
+                                    <i class="fas fa-money-bill-wave mr-2"></i>Precio Total a Pagar
+                                </label>
+                                <p class="text-xs text-green-700" id="detalle_precio">Habitación × días</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl sm:text-3xl font-bold text-green-900" id="precio_total_monto">
+                                    Bs. 0.00
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Descuento (Opcional) -->
+                <div id="descuento_container" class="hidden">
+                    <div class="bg-orange-50 border-2 border-orange-300 rounded-xl p-4">
+                        <div class="flex items-start gap-2 mb-3">
+                            <i class="fas fa-tag text-orange-600 mt-1"></i>
+                            <div class="flex-1">
+                                <label class="block text-sm font-semibold text-orange-900 mb-1">Aplicar Descuento (Opcional)</label>
+                                <p class="text-xs text-orange-700">Ej: Sin desayuno, promoción, estadía larga</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-orange-900 mb-1">Monto a descontar (Bs.)</label>
+                                <input 
+                                    type="number" 
+                                    id="descuento"
+                                    name="descuento"
+                                    min="0"
+                                    step="0.01"
+                                    oninput="calcularFechaSalida()"
+                                    placeholder="0.00"
+                                    class="w-full px-3 py-2 text-sm border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-orange-900 mb-1">Motivo del descuento</label>
+                                <input 
+                                    type="text" 
+                                    id="motivo_descuento"
+                                    name="motivo_descuento"
+                                    placeholder="Ej: Sin desayuno"
+                                    class="w-full px-3 py-2 text-sm border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                >
+                            </div>
+                        </div>
+                        <div id="precio_con_descuento" class="hidden mt-3 pt-3 border-t border-orange-300">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-orange-900">Total con descuento:</span>
+                                <span class="text-xl font-bold text-orange-900" id="precio_final">Bs. 0.00</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
     <!-- Action Buttons -->
-    <div class="flex items-center justify-between pt-6">
-        <a href="<?php echo BASE_PATH; ?>/views/huespedes/activos.php" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-mist transition-all duration-200">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-6">
+        <a href="<?php echo BASE_PATH; ?>/views/huespedes/activos.php" class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-mist transition-all duration-200 text-center">
             Cancelar
         </a>
         <button 
             type="submit" 
-            class="px-8 py-3.5 bg-noir text-white font-semibold rounded-xl hover:bg-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            class="px-6 py-2.5 bg-noir text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-md hover:shadow-lg"
         >
             Registrar Huésped
         </button>
@@ -669,7 +791,7 @@ let tipoHabitacion = '';
 
 // Función para actualizar capacidad cuando cambia la habitación
 function actualizarCapacidadHabitacion() {
-    const select = document.getElementById('habitacion_select');
+    const select = document.getElementById('nro_pieza');
     const opcionSeleccionada = select.options[select.selectedIndex];
     
     if (!opcionSeleccionada.value) {
@@ -946,10 +1068,13 @@ function buscarAcompanantePorCI(id) {
         });
 }
 
-// Función existente para calcular fecha de salida
+// Función existente para calcular fecha de salida y precio total
 function calcularFechaSalida() {
     const fechaIngreso = document.getElementById('fecha_ingreso').value;
     const nroDias = document.getElementById('nro_dias').value;
+    const habitacionSelect = document.getElementById('nro_pieza');
+    const precioContainer = document.getElementById('precio_total_container');
+    const descuentoContainer = document.getElementById('descuento_container');
     
     if (fechaIngreso && nroDias) {
         // Parsear la fecha correctamente evitando problemas de zona horaria
@@ -970,6 +1095,38 @@ function calcularFechaSalida() {
         if (mensajeSalida) {
             const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
             mensajeSalida.innerHTML = `<i class="fas fa-clock mr-1"></i> Salida: ${day} de ${meses[fecha.getMonth()]} de ${year} hasta las 12:00 del mediodía`;
+        }
+        
+        // Calcular precio total si hay habitación seleccionada
+        if (habitacionSelect && habitacionSelect.value) {
+            const selectedOption = habitacionSelect.options[habitacionSelect.selectedIndex];
+            const precioDia = parseFloat(selectedOption.getAttribute('data-precio'));
+            
+            if (precioDia && !isNaN(precioDia)) {
+                const precioTotal = precioDia * parseInt(nroDias);
+                document.getElementById('precio_total_monto').textContent = `Bs. ${precioTotal.toFixed(2)}`;
+                document.getElementById('detalle_precio').textContent = `Bs. ${precioDia.toFixed(2)} × ${nroDias} día${nroDias > 1 ? 's' : ''}`;
+                precioContainer.classList.remove('hidden');
+                descuentoContainer.classList.remove('hidden');
+                
+                // Calcular precio con descuento si existe
+                const descuento = parseFloat(document.getElementById('descuento').value) || 0;
+                if (descuento > 0) {
+                    const precioFinal = precioTotal - descuento;
+                    document.getElementById('precio_final').textContent = `Bs. ${precioFinal.toFixed(2)}`;
+                    document.getElementById('precio_con_descuento').classList.remove('hidden');
+                } else {
+                    document.getElementById('precio_con_descuento').classList.add('hidden');
+                }
+            }
+        }
+    } else {
+        // Ocultar precio si no hay datos completos
+        if (precioContainer) {
+            precioContainer.classList.add('hidden');
+        }
+        if (descuentoContainer) {
+            descuentoContainer.classList.add('hidden');
         }
     }
 }

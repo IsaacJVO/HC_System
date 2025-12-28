@@ -38,12 +38,12 @@ include __DIR__ . '/../../includes/header.php';
     .no-print { display: none !important; }
     @page {
         size: letter portrait;
-        margin: 1cm 1.5cm;
+        margin: 0.5cm 1cm;
     }
     body {
         background: white !important;
         padding: 0 !important;
-        font-size: 9pt;
+        font-size: 8pt;
     }
     .print-container {
         display: block !important;
@@ -52,36 +52,99 @@ include __DIR__ . '/../../includes/header.php';
         border: none !important;
         margin: 0 !important;
         padding: 0 !important;
+        transform: scale(0.95);
+        transform-origin: top center;
     }
-    table { page-break-inside: avoid; font-size: 8pt; }
-    .signature-section { margin-top: 2cm; page-break-inside: avoid; }
-    h1 { font-size: 16pt; }
-    h2 { font-size: 13pt; }
-    h3 { font-size: 11pt; }
+    table { 
+        page-break-inside: avoid; 
+        font-size: 7pt;
+        margin-bottom: 0.3cm !important;
+    }
+    table th,
+    table td {
+        padding: 1px 3px !important;
+        line-height: 1.2 !important;
+    }
+    .signature-section { 
+        margin-top: 1cm !important; 
+        page-break-inside: avoid; 
+    }
+    h1 { font-size: 14pt; margin-bottom: 0.2cm !important; }
+    h2 { font-size: 11pt; margin-bottom: 0.2cm !important; }
+    h3 { font-size: 9pt; margin-bottom: 0.1cm !important; }
+    
+    /* Reducir espacios entre secciones */
+    .print-container > div {
+        margin-bottom: 0.3cm !important;
+    }
+    
+    /* Hacer títulos de secciones más compactos */
+    .bg-gray-800 {
+        padding: 0.1cm 0.2cm !important;
+    }
 }
 
 .compact-table {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.3;
 }
 .compact-table th,
 .compact-table td {
-    padding: 4px 8px;
+    padding: 3px 6px;
+}
+
+@media (min-width: 768px) {
+    .compact-table {
+        font-size: 11px;
+    }
+    .compact-table th,
+    .compact-table td {
+        padding: 4px 8px;
+    }
+}
+
+/* Hacer tablas scrolleables en móvil */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+    .compact-table thead th {
+        font-size: 9px;
+        padding: 2px 4px;
+    }
+    .compact-table tbody td {
+        font-size: 9px;
+        padding: 2px 4px;
+    }
 }
 </style>
 
 <!-- Botones de acción (no se imprimen) -->
 <div class="no-print mb-8">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-4xl font-bold text-noir dark:text-white mb-2">Resumen Financiero</h1>
-            <p class="text-gray-500 dark:text-gray-400">Informe detallado de caja para liquidación</p>
+    <?php if (isset($_GET['error']) && $_GET['error'] === 'acceso_denegado'): ?>
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+            <div>
+                <p class="text-sm font-semibold text-red-900 dark:text-red-300">Acceso Denegado</p>
+                <p class="text-xs text-red-700 dark:text-red-400 mt-1">No tienes permisos para acceder a esa sección. Solo los administradores pueden registrar ingresos y egresos.</p>
+            </div>
         </div>
-        <div class="flex gap-3">
-            <button onclick="window.print()" class="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all duration-200">
-                🖨️ Imprimir / PDF
+    </div>
+    <?php endif; ?>
+    
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl md:text-4xl font-bold text-noir dark:text-white mb-2">Resumen Financiero</h1>
+            <p class="text-sm md:text-base text-gray-500 dark:text-gray-400">Informe detallado de caja para liquidación</p>
+        </div>
+        <div class="flex gap-2 md:gap-3">
+            <button onclick="window.print()" class="flex-1 md:flex-none px-3 md:px-6 py-2 md:py-3 bg-gray-900 dark:bg-gray-700 text-white rounded-lg md:rounded-xl text-sm md:text-base font-medium hover:bg-gray-800 dark:hover:bg-gray-600 transition-all duration-200">
+                <span class="hidden md:inline"></span>Imprimir
             </button>
-            <a href="<?php echo BASE_PATH; ?>/index.php" class="px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 font-medium hover:bg-mist dark:hover:bg-gray-800 transition-all duration-200">
+            <a href="<?php echo BASE_PATH; ?>/index.php" class="flex-1 md:flex-none px-3 md:px-6 py-2 md:py-3 border border-gray-300 dark:border-gray-700 rounded-lg md:rounded-xl text-gray-700 dark:text-gray-300 text-sm md:text-base font-medium hover:bg-mist dark:hover:bg-gray-800 transition-all duration-200 text-center">
                 ← Volver
             </a>
         </div>
@@ -111,8 +174,8 @@ include __DIR__ . '/../../includes/header.php';
             </div>
             <div class="flex items-end">
                 <button type="submit" 
-                        class="w-full px-6 py-3.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                    🔄 Actualizar Resumen
+                        class="w-full px-6 py-3.5 bg-gray-900 dark:bg-gray-700 text-white font-semibold rounded-xl hover:bg-gray-800 dark:hover:bg-gray-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                    Actualizar Resumen
                 </button>
             </div>
         </div>
@@ -138,37 +201,38 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
     <!-- Resumen Ejecutivo -->
-    <div class="grid grid-cols-4 gap-3 mb-4 text-xs">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 text-xs">
         <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-2">
-            <p class="text-green-700 dark:text-green-400 font-semibold mb-1">Ingresos Efectivo</p>
-            <p class="text-lg font-bold text-green-900 dark:text-green-300">Bs. <?php echo formatMoney($total_efectivo); ?></p>
-            <p class="text-[10px] text-green-600 dark:text-green-500"><?php echo count($ingresos_efectivo); ?> transacciones</p>
+            <p class="text-green-700 dark:text-green-400 font-semibold mb-1 text-[10px] md:text-xs">Ingresos Efectivo</p>
+            <p class="text-sm md:text-lg font-bold text-green-900 dark:text-green-300">Bs. <?php echo formatMoney($total_efectivo); ?></p>
+            <p class="text-[9px] md:text-[10px] text-green-600 dark:text-green-500"><?php echo count($ingresos_efectivo); ?> transac.</p>
         </div>
         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-2">
-            <p class="text-blue-700 dark:text-blue-400 font-semibold mb-1">Ingresos QR</p>
-            <p class="text-lg font-bold text-blue-900 dark:text-blue-300">Bs. <?php echo formatMoney($total_qr); ?></p>
-            <p class="text-[10px] text-blue-600 dark:text-blue-500"><?php echo count($ingresos_qr); ?> transacciones</p>
+            <p class="text-blue-700 dark:text-blue-400 font-semibold mb-1 text-[10px] md:text-xs">Ingresos QR</p>
+            <p class="text-sm md:text-lg font-bold text-blue-900 dark:text-blue-300">Bs. <?php echo formatMoney($total_qr); ?></p>
+            <p class="text-[9px] md:text-[10px] text-blue-600 dark:text-blue-500"><?php echo count($ingresos_qr); ?> transac.</p>
         </div>
         <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2">
-            <p class="text-red-700 dark:text-red-400 font-semibold mb-1">Egresos</p>
-            <p class="text-lg font-bold text-red-900 dark:text-red-300">Bs. <?php echo formatMoney($total_egresos); ?></p>
-            <p class="text-[10px] text-red-600 dark:text-red-500"><?php echo count($egresos); ?> transacciones</p>
+            <p class="text-red-700 dark:text-red-400 font-semibold mb-1 text-[10px] md:text-xs">Egresos</p>
+            <p class="text-sm md:text-lg font-bold text-red-900 dark:text-red-300">Bs. <?php echo formatMoney($total_egresos); ?></p>
+            <p class="text-[9px] md:text-[10px] text-red-600 dark:text-red-500"><?php echo count($egresos); ?> transac.</p>
         </div>
         <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-2">
-            <p class="text-yellow-700 dark:text-yellow-400 font-semibold mb-1">Balance Caja</p>
-            <p class="text-lg font-bold text-yellow-900 dark:text-yellow-300">Bs. <?php echo formatMoney($balance_recepcionista); ?></p>
-            <p class="text-[10px] text-yellow-600 dark:text-yellow-500">A entregar</p>
+            <p class="text-yellow-700 dark:text-yellow-400 font-semibold mb-1 text-[10px] md:text-xs">Balance Caja</p>
+            <p class="text-sm md:text-lg font-bold text-yellow-900 dark:text-yellow-300">Bs. <?php echo formatMoney($balance_recepcionista); ?></p>
+            <p class="text-[9px] md:text-[10px] text-yellow-600 dark:text-yellow-500">A entregar</p>
         </div>
     </div>
 
     <!-- SECCIÓN 1: INGRESOS EN EFECTIVO -->
     <div class="mb-4">
-        <div class="bg-green-600 text-white px-3 py-1.5 mb-2 flex items-center justify-between">
-            <h3 class="text-sm font-bold">1. INGRESOS EN EFECTIVO - Caja del Recepcionista</h3>
-            <span class="text-xs opacity-90">Dinero físico manejado por el recepcionista</span>
+        <div class="bg-green-600 text-white px-2 md:px-3 py-1.5 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+            <h3 class="text-xs md:text-sm font-bold">1. INGRESOS EN EFECTIVO</h3>
+            <span class="text-[10px] md:text-xs opacity-90 hidden md:inline">Dinero físico manejado por el recepcionista</span>
         </div>
         
-        <table class="w-full compact-table border border-gray-300 dark:border-gray-700">
+        <div class="table-responsive">
+            <table class="w-full compact-table border border-gray-300 dark:border-gray-700">
             <thead class="bg-gray-100 dark:bg-gray-800">
                 <tr>
                     <th class="text-left border-b border-gray-300 dark:border-gray-700">Fecha</th>
@@ -200,16 +264,18 @@ include __DIR__ . '/../../includes/header.php';
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- SECCIÓN 2: INGRESOS POR QR -->
     <div class="mb-4">
-        <div class="bg-blue-600 text-white px-3 py-1.5 mb-2 flex items-center justify-between">
-            <h3 class="text-sm font-bold">2. INGRESOS POR QR - Transferencias Bancarias Directas</h3>
-            <span class="text-xs opacity-90">Pagos directos a cuenta Banco Sol del propietario</span>
+        <div class="bg-blue-600 text-white px-2 md:px-3 py-1.5 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+            <h3 class="text-xs md:text-sm font-bold">2. INGRESOS POR QR</h3>
+            <span class="text-[10px] md:text-xs opacity-90 hidden md:inline">Transferencias bancarias directas</span>
         </div>
         
-        <table class="w-full compact-table border border-gray-300 dark:border-gray-700">
+        <div class="table-responsive">
+            <table class="w-full compact-table border border-gray-300 dark:border-gray-700">
             <thead class="bg-gray-100 dark:bg-gray-800">
                 <tr>
                     <th class="text-left border-b border-gray-300 dark:border-gray-700">Fecha</th>
@@ -241,16 +307,18 @@ include __DIR__ . '/../../includes/header.php';
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- SECCIÓN 3: EGRESOS -->
     <div class="mb-4">
-        <div class="bg-red-600 text-white px-3 py-1.5 mb-2 flex items-center justify-between">
-            <h3 class="text-sm font-bold">3. EGRESOS - Salidas de Caja del Recepcionista</h3>
-            <span class="text-xs opacity-90">Gastos realizados con dinero en efectivo de la caja</span>
+        <div class="bg-red-600 text-white px-2 md:px-3 py-1.5 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+            <h3 class="text-xs md:text-sm font-bold">3. EGRESOS</h3>
+            <span class="text-[10px] md:text-xs opacity-90 hidden md:inline">Salidas de caja del recepcionista</span>
         </div>
         
-        <table class="w-full compact-table border border-gray-300 dark:border-gray-700">
+        <div class="table-responsive">
+            <table class="w-full compact-table border border-gray-300 dark:border-gray-700">
             <thead class="bg-gray-100 dark:bg-gray-800">
                 <tr>
                     <th class="text-left border-b border-gray-300 dark:border-gray-700">Fecha</th>
@@ -296,40 +364,41 @@ include __DIR__ . '/../../includes/header.php';
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- RESUMEN CONSOLIDADO Y LIQUIDACIÓN -->
-    <div class="mb-4 border-2 border-gray-800 dark:border-gray-600">
-        <div class="bg-gray-800 dark:bg-gray-700 text-white px-3 py-1.5">
-            <h3 class="text-sm font-bold">RESUMEN CONSOLIDADO Y LIQUIDACIÓN FINAL</h3>
+    <div class="mb-3 border border-gray-800 dark:border-gray-600">
+        <div class="bg-gray-800 dark:bg-gray-700 text-white px-3 py-1">
+            <h3 class="text-xs font-bold uppercase tracking-wide">Resumen y Liquidación</h3>
         </div>
         
-        <div class="p-3">
-            <table class="w-full text-xs mb-3">
+        <div class="p-2 sm:p-3">
+            <table class="w-full text-[10px] sm:text-xs">
                 <tbody>
                     <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <td class="py-1.5 font-semibold">A) Total Ingresos en Efectivo (Caja)</td>
-                        <td class="py-1.5 text-right font-bold text-green-700 dark:text-green-400">+ Bs. <?php echo formatMoney($total_efectivo); ?></td>
+                        <td class="py-1 text-gray-700 dark:text-gray-300">Ingresos Efectivo (Caja)</td>
+                        <td class="py-1 text-right font-semibold text-green-600 dark:text-green-400">+ Bs. <?php echo formatMoney($total_efectivo); ?></td>
                     </tr>
                     <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <td class="py-1.5 font-semibold">B) Total Egresos (Gastos de Caja)</td>
-                        <td class="py-1.5 text-right font-bold text-red-700 dark:text-red-400">- Bs. <?php echo formatMoney($total_egresos); ?></td>
+                        <td class="py-1 text-gray-700 dark:text-gray-300">Egresos (Gastos)</td>
+                        <td class="py-1 text-right font-semibold text-red-600 dark:text-red-400">- Bs. <?php echo formatMoney($total_egresos); ?></td>
                     </tr>
-                    <tr class="bg-yellow-100 dark:bg-yellow-900/30 border-y-2 border-yellow-600">
-                        <td class="py-2 font-bold text-base">EFECTIVO A ENTREGAR A DON RODOLFO</td>
-                        <td class="py-2 text-right font-bold text-xl text-yellow-900 dark:text-yellow-300">Bs. <?php echo formatMoney($balance_recepcionista); ?></td>
+                    <tr class="bg-yellow-50 dark:bg-yellow-900/10 border-y border-yellow-300 dark:border-yellow-800">
+                        <td class="py-1 sm:py-1.5 font-semibold text-yellow-800 dark:text-yellow-300">Efectivo a Entregar</td>
+                        <td class="py-1 sm:py-1.5 text-right font-bold text-base sm:text-lg text-yellow-800 dark:text-yellow-300">Bs. <?php echo formatMoney($balance_recepcionista); ?></td>
                     </tr>
                     <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <td class="py-1.5 font-semibold text-gray-600 dark:text-gray-400">C) Ingresos por QR (Ya depositados en Banco Sol)</td>
-                        <td class="py-1.5 text-right font-bold text-blue-700 dark:text-blue-400">Bs. <?php echo formatMoney($total_qr); ?></td>
+                        <td class="py-1 text-gray-600 dark:text-gray-400 text-[9px] sm:text-xs">Ingresos QR (Banco Sol)</td>
+                        <td class="py-1 text-right font-semibold text-blue-600 dark:text-blue-400">Bs. <?php echo formatMoney($total_qr); ?></td>
                     </tr>
-                    <tr class="bg-gray-800 dark:bg-gray-700 text-white border-t-2 border-gray-800">
-                        <td class="py-2 font-bold text-base">INGRESO BRUTO TOTAL DEL HOTEL</td>
-                        <td class="py-2 text-right font-bold text-xl">Bs. <?php echo formatMoney($total_efectivo + $total_qr); ?></td>
+                    <tr class="bg-gray-50 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
+                        <td class="py-1 sm:py-1.5 font-semibold text-gray-900 dark:text-white">Ingreso Bruto Total</td>
+                        <td class="py-1 sm:py-1.5 text-right font-bold text-sm sm:text-base text-gray-900 dark:text-white">Bs. <?php echo formatMoney($total_efectivo + $total_qr); ?></td>
                     </tr>
-                    <tr class="bg-gray-100 dark:bg-gray-800">
-                        <td class="py-2 font-bold text-base">UTILIDAD NETA DEL PERÍODO</td>
-                        <td class="py-2 text-right font-bold text-xl text-green-700 dark:text-green-400">Bs. <?php echo formatMoney($total_efectivo + $total_qr - $total_egresos); ?></td>
+                    <tr class="bg-green-50 dark:bg-green-900/10">
+                        <td class="py-1 sm:py-1.5 font-semibold text-green-800 dark:text-green-300">Utilidad Neta</td>
+                        <td class="py-1 sm:py-1.5 text-right font-bold text-sm sm:text-base text-green-700 dark:text-green-400">Bs. <?php echo formatMoney($total_efectivo + $total_qr - $total_egresos); ?></td>
                     </tr>
                 </tbody>
             </table>
@@ -338,22 +407,22 @@ include __DIR__ . '/../../includes/header.php';
 
     <!-- FIRMAS Y VALIDACIÓN -->
     <div class="signature-section mt-6">
-        <div class="grid grid-cols-2 gap-8 text-center text-xs mb-3">
+        <div class="grid grid-cols-2 gap-4 md:gap-8 text-center text-[10px] md:text-xs mb-3">
             <div>
-                <div class="border-t border-gray-800 dark:border-gray-600 pt-1 mb-1 mt-12">
+                <div class="border-t border-gray-800 dark:border-gray-600 pt-1 mb-1 mt-8 md:mt-12">
                     <p class="font-bold text-gray-900 dark:text-white">RECEPCIONISTA</p>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">Isaac Vargas</p>
             </div>
             <div>
-                <div class="border-t border-gray-800 dark:border-gray-600 pt-1 mb-1 mt-12">
+                <div class="border-t border-gray-800 dark:border-gray-600 pt-1 mb-1 mt-8 md:mt-12">
                     <p class="font-bold text-gray-900 dark:text-white">PROPIETARIO</p>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">Don Rodolfo</p>
             </div>
         </div>
         
-        <div class="text-center text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-300 dark:border-gray-700 pt-2">
+        <div class="text-center text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-300 dark:border-gray-700 pt-2">
             <p>Este documento certifica la liquidación de caja del período indicado.</p>
             <p>Documento generado automáticamente el <?php echo date('d/m/Y'); ?> a las <?php echo date('H:i'); ?> hs. - Sistema Hotel Cecil v1.0</p>
         </div>

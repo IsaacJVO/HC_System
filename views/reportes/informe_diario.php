@@ -127,27 +127,27 @@ table.compact-table td {
 </style>
 
 <!-- Controles (no se imprimen) -->
-<div class="no-print mb-8">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-4xl font-bold text-noir dark:text-white mb-2">Informe Diario del Hotel</h1>
-            <p class="text-gray-500 dark:text-gray-400">Resumen ejecutivo para el personal</p>
+<div class="no-print mb-6 sm:mb-8">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+        <div class="flex-1">
+            <h1 class="text-xl sm:text-2xl md:text-4xl font-bold text-noir dark:text-white mb-1 sm:mb-2">Informe Diario del Hotel</h1>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Resumen ejecutivo para el personal</p>
         </div>
-        <button onclick="window.print()" class="px-6 py-3 bg-noir dark:bg-white text-white dark:text-noir rounded-xl font-medium hover:opacity-90 transition-all duration-200 shadow-lg flex items-center gap-2">
+        <button onclick="window.print()" class="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base bg-noir dark:bg-white text-white dark:text-noir rounded-lg sm:rounded-xl font-medium hover:opacity-90 transition-all duration-200 shadow-md sm:shadow-lg flex items-center justify-center gap-2">
             <i class="fas fa-print"></i>
-            Imprimir Informe
+            Imprimir
         </button>
     </div>
     
-    <div class="flex gap-4">
-        <a href="<?php echo BASE_PATH; ?>/index.php" class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-            Volver al Inicio
+    <div class="flex gap-2 sm:gap-4">
+        <a href="<?php echo BASE_PATH; ?>/index.php" class="flex-1 sm:flex-initial px-3 py-2 sm:px-4 text-sm sm:text-base text-center border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+            ← Volver
         </a>
     </div>
 </div>
 
 <!-- Informe -->
-<div class="informe-container bg-white rounded-2xl border-2 border-gray-900 p-6 max-w-4xl mx-auto shadow-lg">
+<div class="informe-container bg-white rounded-xl sm:rounded-2xl border border-gray-300 sm:border-2 sm:border-gray-900 p-4 sm:p-6 max-w-4xl mx-auto shadow-lg">
     
     <!-- Encabezado -->
     <div class="text-center" style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000;">

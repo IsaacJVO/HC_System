@@ -116,6 +116,7 @@ include __DIR__ . '/../../includes/header.php';
         .planilla-print {
             max-width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .dark .planilla-print * {
@@ -128,13 +129,27 @@ include __DIR__ . '/../../includes/header.php';
         }
         
         .print-table {
-            font-size: 11px;
+            font-size: 10px;
+        }
+        
+        @media (min-width: 640px) {
+            .print-table {
+                font-size: 11px;
+            }
         }
         
         .print-table th,
         .print-table td {
-            padding: 6px 8px;
+            padding: 4px 6px;
             border: 1px solid #ddd;
+            white-space: nowrap;
+        }
+        
+        @media (min-width: 640px) {
+            .print-table th,
+            .print-table td {
+                padding: 6px 8px;
+            }
         }
         
         .print-table thead {
@@ -145,44 +160,45 @@ include __DIR__ . '/../../includes/header.php';
 </style>
 
 <!-- Controles de filtro -->
-<div class="no-print mb-8">
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-noir">Planilla de Huéspedes</h1>
-                    <p class="text-sm text-gray-500 mt-1">Registro oficial de ocupaciones</p>
+<div class="no-print mb-6 sm:mb-8">
+    <div class="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex-1">
+                    <h1 class="text-xl sm:text-2xl font-bold text-noir dark:text-white">Planilla de Huéspedes</h1>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Registro oficial de ocupaciones</p>
                 </div>
-                <div class="flex gap-3">
-                    <a href="<?php echo BASE_PATH; ?>/index.php" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-all">
+                <div class="flex gap-2 sm:gap-3">
+                    <a href="<?php echo BASE_PATH; ?>/index.php" class="flex-1 sm:flex-initial px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
                         ← Volver
                     </a>
-                    <button onclick="window.print()" class="px-6 py-2 bg-noir text-white font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-lg flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onclick="window.print()" class="flex-1 sm:flex-initial px-3 py-2 sm:px-6 text-sm sm:text-base bg-noir dark:bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-800 dark:hover:bg-gray-700 transition-all shadow-md sm:shadow-lg flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                         </svg>
-                        Imprimir / PDF
+                        <span class="hidden sm:inline">Imprimir / PDF</span>
+                        <span class="sm:hidden">PDF</span>
                     </button>
                 </div>
             </div>
         </div>
         
-        <div class="p-6">
-            <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 sm:p-6">
+            <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Inicio</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Fecha Inicio</label>
                     <input type="date" name="fecha_inicio" 
                            value="<?php echo $fecha_inicio; ?>"
-                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-noir focus:border-transparent">
+                           class="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-noir focus:border-transparent bg-white dark:bg-gray-800 text-noir dark:text-white">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Fin</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Fecha Fin</label>
                     <input type="date" name="fecha_fin" 
                            value="<?php echo $fecha_fin; ?>"
-                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-noir focus:border-transparent">
+                           class="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-noir focus:border-transparent bg-white dark:bg-gray-800 text-noir dark:text-white">
                 </div>
-                <div class="flex items-end">
-                    <button type="submit" name="filtrar" class="w-full px-4 py-2.5 bg-noir text-white font-medium rounded-lg hover:bg-gray-800 transition-all">
+                <div class="sm:flex sm:items-end">
+                    <button type="submit" name="filtrar" class="w-full px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-noir dark:bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-700 transition-all">
                         Filtrar
                     </button>
                 </div>
@@ -200,8 +216,8 @@ include __DIR__ . '/../../includes/header.php';
     </div>
     
     <!-- Tabla de registros -->
-    <div style="width: 100%; overflow-x: auto;">
-        <table class="print-table" style="width: 100%; border-collapse: collapse;">
+    <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <table class="print-table" style="width: 100%; border-collapse: collapse; min-width: 1200px;">
             <thead>
                 <tr>
                     <th style="text-align: center; font-weight: bold;">Nro</th>

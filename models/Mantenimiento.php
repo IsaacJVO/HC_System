@@ -93,10 +93,10 @@ class Mantenimiento {
     public function crear($datos) {
         $sql = "INSERT INTO mantenimientos 
                 (habitacion_numero, titulo, descripcion, prioridad, tipo, estado, 
-                 costo_estimado, fecha_inicio, fecha_fin_estimada, responsable, observaciones) 
+                 costo_estimado, fecha_inicio, fecha_fin_estimada, responsable, observaciones, imagen) 
                 VALUES 
                 (:habitacion_numero, :titulo, :descripcion, :prioridad, :tipo, :estado,
-                 :costo_estimado, :fecha_inicio, :fecha_fin_estimada, :responsable, :observaciones)";
+                 :costo_estimado, :fecha_inicio, :fecha_fin_estimada, :responsable, :observaciones, :imagen)";
         
         $stmt = $this->conn->prepare($sql);
         $result = $stmt->execute([
@@ -110,7 +110,8 @@ class Mantenimiento {
             ':fecha_inicio' => $datos['fecha_inicio'],
             ':fecha_fin_estimada' => $datos['fecha_fin_estimada'] ?? null,
             ':responsable' => $datos['responsable'] ?? null,
-            ':observaciones' => $datos['observaciones'] ?? null
+            ':observaciones' => $datos['observaciones'] ?? null,
+            ':imagen' => $datos['imagen'] ?? null
         ]);
         
         return $result ? $this->conn->lastInsertId() : false;

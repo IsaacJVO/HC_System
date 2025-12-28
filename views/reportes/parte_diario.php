@@ -251,26 +251,32 @@ body:not(.dark *) .parte-diario {
 </style>
 
 <!-- Controles (no se imprimen) -->
-<div class="no-print mb-8">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-4xl font-bold text-noir dark:text-white mb-2">Parte Diario - Planilla de Pasajeros</h1>
-            <p class="text-gray-500 dark:text-gray-400">Registro oficial mensual para autoridades</p>
+<div class="no-print mb-6 sm:mb-8">
+    <div class="flex flex-col gap-3 mb-4 sm:mb-6">
+        <div class="flex-1">
+            <h1 class="text-xl sm:text-2xl md:text-4xl font-bold text-noir dark:text-white mb-1 sm:mb-2">Parte Diario - Planilla de Pasajeros</h1>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Registro oficial mensual</p>
         </div>
-        <button onclick="window.print()" class="px-6 py-3 bg-noir dark:bg-white text-white dark:text-noir rounded-xl font-medium hover:opacity-90 transition-all duration-200 shadow-lg flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-            </svg>
-            Imprimir
-        </button>
+        
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <a href="<?php echo BASE_PATH; ?>/index.php" class="px-4 py-2.5 sm:px-4 sm:py-2 text-sm sm:text-base text-center border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                ← Volver
+            </a>
+            <button onclick="window.print()" class="px-4 py-2.5 sm:px-6 sm:py-2 text-sm sm:text-base bg-noir dark:bg-white text-white dark:text-noir rounded-lg sm:rounded-xl font-medium hover:opacity-90 transition-all duration-200 shadow-md sm:shadow-lg flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Imprimir
+            </button>
+        </div>
     </div>
     
     <!-- Selector de Mes/Año -->
-    <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 mb-6">
-        <form method="GET" class="flex items-center gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mes:</label>
-                <select name="mes" class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white">
+    <div class="bg-white dark:bg-gray-900 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 mb-4 sm:mb-6">
+        <form method="GET" class="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
+            <div class="flex-1">
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Mes:</label>
+                <select name="mes" class="w-full px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white">
                     <?php for($m = 1; $m <= 12; $m++): ?>
                         <option value="<?php echo $m; ?>" <?php echo $m == $mes ? 'selected' : ''; ?>>
                             <?php echo $meses[$m]; ?>
@@ -279,9 +285,9 @@ body:not(.dark *) .parte-diario {
                 </select>
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Año:</label>
-                <select name="anio" class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white">
+            <div class="flex-1">
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">Año:</label>
+                <select name="anio" class="w-full px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg dark:bg-gray-800 dark:text-white">
                     <?php for($a = date('Y'); $a >= 2020; $a--): ?>
                         <option value="<?php echo $a; ?>" <?php echo $a == $anio ? 'selected' : ''; ?>>
                             <?php echo $a; ?>
@@ -290,21 +296,12 @@ body:not(.dark *) .parte-diario {
                 </select>
             </div>
             
-            <div style="margin-top: 28px;">
-                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                    Generar
+            <div class="flex-1">
+                <button type="submit" class="w-full px-4 py-2 sm:px-6 text-sm sm:text-base bg-noir dark:bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
+                    Filtrar
                 </button>
             </div>
         </form>
-    </div>
-    
-    <div class="flex gap-4">
-        <a href="<?php echo BASE_PATH; ?>/views/reportes/planilla.php" class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-            Ver Planilla General
-        </a>
-        <a href="<?php echo BASE_PATH; ?>/index.php" class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-            Volver al Inicio
-        </a>
     </div>
 </div>
 

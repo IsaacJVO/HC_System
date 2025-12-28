@@ -192,6 +192,7 @@ if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > $time
                         </button>
                         <div class="absolute left-0 mt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 animate-slide-down">
                             <div class="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                                <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'administrador'): ?>
                                 <a href="<?php echo BASE_PATH; ?>/views/finanzas/ingresos.php" class="block px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 transition-colors duration-150 group/item">
                                     <div class="flex items-center space-x-3">
                                         <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -200,8 +201,8 @@ if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > $time
                                             </svg>
                                         </div>
                                         <div class="flex-1">
-                                            <div class="font-medium text-gray-900 dark:text-white">Ingresos Extras</div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-500">Ganancias adicionales</div>
+                                            <div class="font-medium text-gray-900 dark:text-white">Ingresos</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-500">Registro de ingresos</div>
                                         </div>
                                         <div class="w-1.5 h-1.5 rounded-full bg-green-500 opacity-60"></div>
                                     </div>
@@ -237,6 +238,7 @@ if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > $time
                                     </div>
                                 </a>
                                 <div class="border-t border-gray-100 dark:border-gray-800"></div>
+                                <?php endif; ?>
                                 <a href="<?php echo BASE_PATH; ?>/views/finanzas/resumen.php" class="block px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 transition-colors duration-150 group/item">
                                     <div class="flex items-center space-x-3">
                                         <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -251,6 +253,22 @@ if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > $time
                                         <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-60"></div>
                                     </div>
                                 </a>
+                                <?php if (esAdmin()): ?>
+                                <a href="<?php echo BASE_PATH; ?>/views/finanzas/garajes.php" class="block px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 transition-colors duration-150 group/item">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900 dark:text-white">Garajes</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-500">Control de garajes</div>
+                                        </div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-orange-500 opacity-60"></div>
+                                    </div>
+                                </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -288,28 +306,39 @@ if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > $time
         </div>
         
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 max-h-[calc(100vh-4rem)] overflow-y-auto">
             <div class="px-6 py-4 space-y-1">
                 <div class="px-4 py-3 mb-3 rounded-lg bg-gray-100 dark:bg-gray-800">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">👤 <?php echo htmlspecialchars($_SESSION['usuario']); ?></span>
                 </div>
                 <a href="<?php echo BASE_PATH; ?>/index.php" class="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Dashboard</a>
-                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Huéspedes</div>
+                <div class="mt-4 px-3 py-2 border-l-2 border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800/50">
+                    <div class="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Huéspedes</div>
+                </div>
                 <a href="<?php echo BASE_PATH; ?>/views/huespedes/nuevo.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Nuevo Registro</a>
                 <a href="<?php echo BASE_PATH; ?>/views/huespedes/activos.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Activos</a>
-                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Finanzas</div>
+                <div class="mt-4 px-3 py-2 border-l-2 border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800/50">
+                    <div class="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Finanzas</div>
+                </div>
+                <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'administrador'): ?>
                 <a href="<?php echo BASE_PATH; ?>/views/finanzas/ingresos.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Ingresos</a>
                 <a href="<?php echo BASE_PATH; ?>/views/finanzas/egresos.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Egresos</a>
                 <a href="<?php echo BASE_PATH; ?>/views/finanzas/pagos_qr.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Pagos QR</a>
+                <?php endif; ?>
                 <a href="<?php echo BASE_PATH; ?>/views/finanzas/resumen.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Resumen</a>
-                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Habitaciones</div>
+                <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'administrador'): ?>
+                <a href="<?php echo BASE_PATH; ?>/views/finanzas/garajes.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Garajes</a>
+                <?php endif; ?>
+                <div class="mt-4 px-3 py-2 border-l-2 border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800/50">
+                    <div class="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Habitaciones</div>
+                </div>
                 <a href="<?php echo BASE_PATH; ?>/views/habitaciones/estado.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Estado</a>
                 <a href="<?php echo BASE_PATH; ?>/views/reportes/planilla.php" class="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-mist dark:hover:bg-gray-800 rounded-lg transition-colors">Reportes</a>
                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <a href="<?php echo BASE_PATH; ?>/controllers/auth.php?action=logout" 
                        onclick="return confirm('¿Está seguro que desea cerrar sesión?')"
                        class="block px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                        🚪 Cerrar Sesión
+                        Cerrar Sesión
                     </a>
                 </div>
             </div>

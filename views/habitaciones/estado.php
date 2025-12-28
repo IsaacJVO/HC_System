@@ -2,16 +2,37 @@
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../models/Habitacion.php';
 require_once __DIR__ . '/../../models/Mantenimiento.php';
+require_once __DIR__ . '/../../models/RegistroOcupacion.php';
+require_once __DIR__ . '/../../models/Huesped.php';
 
 $page_title = 'Gestión de Estados';
 
 $habitacionModel = new Habitacion();
 $mantenimientoModel = new Mantenimiento();
+$registroModel = new RegistroOcupacion();
 
 // Obtener mantenimientos activos por habitación
 $mantenimientos_activos = [];
 foreach ($mantenimientoModel->obtenerActivos() as $mant) {
     $mantenimientos_activos[$mant['habitacion_numero']] = $mant;
+}
+
+// Obtener ocupaciones activas con datos de huésped
+$conn = getConnection();
+$sql = "SELECT ro.*, h.nombres_apellidos, h.genero, h.edad, h.ci_pasaporte, h.nacionalidad, 
+               hab.numero as habitacion_numero, hab.estado as hab_estado
+        FROM registro_ocupacion ro
+        INNER JOIN huespedes h ON ro.huesped_id = h.id
+        INNER JOIN habitaciones hab ON ro.habitacion_id = hab.id
+        WHERE ro.estado = 'activo'";
+$stmt = $conn->prepare($sql);
+$stmt->execute();
+$ocupaciones_activas = $stmt->fetchAll();
+
+// Indexar por número de habitación
+$huespedes_por_habitacion = [];
+foreach ($ocupaciones_activas as $ocup) {
+    $huespedes_por_habitacion[$ocup['habitacion_numero']] = $ocup;
 }
 
 // Procesar cambios de estado
@@ -34,6 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['habitacion_id'])) {
 }
 
 $habitaciones = $habitacionModel->obtenerTodas();
+
+// Debug: registrar habitaciones ocupadas (después de obtener $habitaciones)
+error_log("=== DEBUG HABITACIONES OCUPADAS ===");
+foreach ($habitaciones as $h) {
+    if ($h['estado'] === 'ocupado' || $h['estado'] === 'ocupada') {
+        error_log("Habitación {$h['numero']}: estado='{$h['estado']}'");
+        error_log("Tiene huésped: " . (isset($huespedes_por_habitacion[$h['numero']]) ? 'SÍ' : 'NO'));
+    }
+}
 
 // Agrupar por piso
 $por_piso = [
@@ -58,7 +88,7 @@ foreach ($por_piso as $piso => $habs) {
 
 // Contar estados
 $total_disponibles = count(array_filter($habitaciones, fn($h) => $h['estado'] === 'disponible'));
-$total_ocupadas = count(array_filter($habitaciones, fn($h) => $h['estado'] === 'ocupado'));
+$total_ocupadas = count(array_filter($habitaciones, fn($h) => $h['estado'] === 'ocupada' || $h['estado'] === 'ocupado'));
 $total_limpieza = count(array_filter($habitaciones, fn($h) => $h['estado'] === 'limpieza'));
 $total_mantenimiento = count(array_filter($habitaciones, fn($h) => $h['estado'] === 'mantenimiento'));
 
@@ -91,7 +121,6 @@ body {
 .room-cell {
     aspect-ratio: 1;
     border: 2px solid #e5e5e5;
-    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     position: relative;
     cursor: pointer;
@@ -105,22 +134,26 @@ body {
     transform: translateY(-2px);
 }
 
-/* Estados con todo el fondo de color para máxima visibilidad */
+/* Estados con todo el fondo de color para máxima visibilidad - IMPORTANTE: van después del base */
 .room-cell.disponible { 
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    border-color: #10b981;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+    border-color: #10b981 !important;
 }
-.room-cell.ocupado { 
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    border-color: #ef4444;
+
+.room-cell.ocupado,
+.room-cell.ocupada { 
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+    border-color: #f87171 !important;
 }
+
 .room-cell.limpieza { 
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+    border-color: #f59e0b !important;
 }
+
 .room-cell.mantenimiento { 
-    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-    border-color: #6b7280;
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%) !important;
+    border-color: #6b7280 !important;
 }
 
 /* Dark mode para habitaciones */
@@ -134,20 +167,24 @@ body {
 }
 
 .dark .room-cell.disponible { 
-    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
-    border-color: #10b981;
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%) !important;
+    border-color: #10b981 !important;
 }
-.dark .room-cell.ocupado { 
-    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
-    border-color: #ef4444;
+
+.dark .room-cell.ocupado,
+.dark .room-cell.ocupada { 
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%) !important;
+    border-color: #f87171 !important;
 }
+
 .dark .room-cell.limpieza { 
-    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
-    border-color: #f59e0b;
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%) !important;
+    border-color: #f59e0b !important;
 }
+
 .dark .room-cell.mantenimiento { 
-    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
-    border-color: #9ca3af;
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%) !important;
+    border-color: #9ca3af !important;
 }
 
 .floor-label {
@@ -170,7 +207,8 @@ body {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     box-shadow: 0 0 0 3px #d1fae5;
 }
-.status-dot.ocupado { 
+.status-dot.ocupado,
+.status-dot.ocupada { 
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     box-shadow: 0 0 0 3px #fee2e2;
 }
@@ -270,13 +308,13 @@ body {
 <div class="max-w-7xl mx-auto px-4 py-8">
     
     <!-- Header -->
-    <div class="flex items-center justify-between mb-12">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-8 sm:mb-12">
         <div>
-            <h1 class="text-3xl font-light tracking-tight text-gray-900 dark:text-white mb-1">Estado de Habitaciones</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Hotel Cecil</p>
+            <h1 class="text-2xl sm:text-3xl font-light tracking-tight text-gray-900 dark:text-white mb-1">Estado de Habitaciones</h1>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Hotel Cecil</p>
         </div>
-        <a href="<?php echo BASE_PATH; ?>/index.php" class="btn-primary inline-block" style="text-decoration: none;">
-            ← Inicio
+        <a href="<?php echo BASE_PATH; ?>/index.php" class="px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center" style="text-decoration: none;">
+            ← Volver
         </a>
     </div>
 
@@ -321,12 +359,19 @@ body {
         </div>
         
         <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-            <?php foreach ($por_piso[$num_piso] as $hab): ?>
+            <?php foreach ($por_piso[$num_piso] as $hab): 
+                $huesped_info = isset($huespedes_por_habitacion[$hab['numero']]) ? $huespedes_por_habitacion[$hab['numero']] : null;
+                // Debug en comentario HTML
+                echo "<!-- Habitación {$hab['numero']}: estado='{$hab['estado']}', tiene_huesped=" . ($huesped_info ? 'SI' : 'NO') . " -->";
+            ?>
             <div class="room-cell <?php echo $hab['estado']; ?>" 
-                 onclick='openModal(<?php echo json_encode($hab, JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?php echo isset($mantenimientos_activos[$hab['numero']]) ? json_encode($mantenimientos_activos[$hab['numero']], JSON_HEX_APOS | JSON_HEX_QUOT) : 'null'; ?>)'>
+                 onclick='openModal(<?php echo json_encode($hab, JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?php echo isset($mantenimientos_activos[$hab['numero']]) ? json_encode($mantenimientos_activos[$hab['numero']], JSON_HEX_APOS | JSON_HEX_QUOT) : 'null'; ?>, <?php echo $huesped_info ? json_encode($huesped_info, JSON_HEX_APOS | JSON_HEX_QUOT) : 'null'; ?>)'
+                 data-estado="<?php echo $hab['estado']; ?>"
+                 data-numero="<?php echo $hab['numero']; ?>">
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                     <span class="text-2xl font-semibold text-gray-900 dark:text-white"><?php echo $hab['numero']; ?></span>
                     <span class="text-xs text-gray-600 dark:text-gray-300 mt-1 font-medium"><?php echo $hab['tipo']; ?></span>
+                    <!-- DEBUG: Estado actual = <?php echo $hab['estado']; ?> -->
                     <?php if (isset($mantenimientos_activos[$hab['numero']])): ?>
                     <span class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full animate-pulse" title="Con mantenimiento activo"></span>
                     <?php endif; ?>
@@ -381,7 +426,48 @@ body {
             </div>
         </div>
         
-        <form method="POST" class="space-y-2">
+        <!-- Información del huésped si está ocupada -->
+        <div id="m-huesped-info" class="hidden mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div class="flex items-start gap-3 mb-3">
+                    <div class="flex items-center justify-center text-blue-600 dark:text-blue-400" style="min-width: 40px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-base font-bold text-blue-900 dark:text-blue-300" id="m-huesped-nombre"></p>
+                        <p class="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                            <i class="fas fa-id-card mr-1"></i>CI/Pasaporte: <strong id="m-huesped-ci"></strong>
+                        </p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Género</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white" id="m-huesped-genero"></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Edad</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white"><span id="m-huesped-edad"></span> años</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Días de estadía</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white"><span id="m-huesped-dias"></span> días</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Check-in</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white" id="m-huesped-checkin"></p>
+                    </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Nacionalidad</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white" id="m-huesped-nacionalidad"></p>
+                </div>
+            </div>
+        </div>
+        
+        <form method="POST" class="space-y-2"  id="form-cambiar-estado">
             <input type="hidden" name="habitacion_id" id="m-id">
             
             <button type="submit" name="nuevo_estado" value="disponible" class="btn-state w-full text-left">
@@ -390,10 +476,6 @@ body {
             
             <button type="submit" name="nuevo_estado" value="limpieza" class="btn-state w-full text-left">
                 Limpieza
-            </button>
-            
-            <button type="submit" name="nuevo_estado" value="mantenimiento" class="btn-state w-full text-left">
-                Mantenimiento
             </button>
             
             <div class="pt-4">
@@ -408,7 +490,7 @@ body {
 <script>
 const statusMap = {
     'disponible': { text: 'Disponible', class: 'disponible' },
-    'ocupado': { text: 'Ocupada', class: 'ocupado' },
+    'ocupada': { text: 'Ocupada', class: 'ocupado' },
     'limpieza': { text: 'Necesita limpieza', class: 'limpieza' },
     'mantenimiento': { text: 'En mantenimiento', class: 'mantenimiento' }
 };
@@ -420,7 +502,10 @@ const prioridadMap = {
     'urgente': { text: 'Urgente', class: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-300' }
 };
 
-function openModal(room, mantenimiento = null) {
+function openModal(room, mantenimiento = null, huesped = null) {
+    console.log('Estado de habitación:', room.estado);
+    console.log('Datos de huésped:', huesped);
+    
     document.getElementById('m-numero').textContent = room.numero;
     document.getElementById('m-tipo').textContent = room.tipo;
     document.getElementById('m-precio').textContent = parseFloat(room.precio_dia).toFixed(2);
@@ -446,6 +531,26 @@ function openModal(room, mantenimiento = null) {
         prioridadEl.className = 'text-xs px-2 py-1 rounded-full font-semibold ' + prioridad.class;
     } else {
         mantInfo.classList.add('hidden');
+    }
+    
+    // Mostrar información del huésped si la habitación está ocupada
+    const huespedInfo = document.getElementById('m-huesped-info');
+    const formEstado = document.getElementById('form-cambiar-estado');
+    
+    if (huesped && (room.estado === 'ocupada' || room.estado === 'ocupado')) {
+        huespedInfo.classList.remove('hidden');
+        formEstado.classList.add('hidden'); // Ocultar formulario de cambio de estado
+        
+        document.getElementById('m-huesped-nombre').textContent = huesped.nombres_apellidos;
+        document.getElementById('m-huesped-ci').textContent = huesped.ci_pasaporte;
+        document.getElementById('m-huesped-genero').textContent = huesped.genero === 'M' ? 'Masculino' : 'Femenino';
+        document.getElementById('m-huesped-edad').textContent = huesped.edad;
+        document.getElementById('m-huesped-dias').textContent = huesped.nro_dias;
+        document.getElementById('m-huesped-checkin').textContent = new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO');
+        document.getElementById('m-huesped-nacionalidad').textContent = huesped.nacionalidad;
+    } else {
+        huespedInfo.classList.add('hidden');
+        formEstado.classList.remove('hidden'); // Mostrar formulario si no está ocupada
     }
     
     document.getElementById('modal').classList.remove('hidden');

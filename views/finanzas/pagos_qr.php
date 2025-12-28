@@ -3,6 +3,12 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../models/Finanzas.php';
 require_once __DIR__ . '/../../models/RegistroOcupacion.php';
 
+// Verificar que el usuario sea administrador
+if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'administrador') {
+    header('Location: ' . BASE_PATH . '/views/finanzas/resumen.php?error=acceso_denegado');
+    exit;
+}
+
 $page_title = 'Pagos QR';
 $mensaje = '';
 $tipo_mensaje = '';
@@ -72,13 +78,13 @@ include __DIR__ . '/../../includes/header.php';
 
 <!-- Hero Section -->
 <div class="mb-8">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h1 class="text-4xl font-bold text-noir dark:text-white mb-2">Pagos QR</h1>
-            <p class="text-gray-500 dark:text-gray-400">Gestión de transferencias bancarias directas</p>
+            <h1 class="text-2xl md:text-4xl font-bold text-noir dark:text-white mb-2">Pagos QR</h1>
+            <p class="text-sm md:text-base text-gray-500 dark:text-gray-400">Gestión de transferencias bancarias directas</p>
         </div>
-        <a href="<?php echo BASE_PATH; ?>/index.php" class="px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 font-medium hover:bg-mist dark:hover:bg-gray-800 transition-all duration-200">
-            Volver
+        <a href="<?php echo BASE_PATH; ?>/index.php" class="px-3 md:px-6 py-2 md:py-3 border border-gray-300 dark:border-gray-700 rounded-lg md:rounded-xl text-gray-700 dark:text-gray-300 text-sm md:text-base font-medium hover:bg-mist dark:hover:bg-gray-800 transition-all duration-200 text-center">
+            ← Volver
         </a>
     </div>
 </div>
@@ -110,30 +116,30 @@ include __DIR__ . '/../../includes/header.php';
 <?php endif; ?>
 
 <!-- Grid Principal -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
     
     <!-- Formulario Registro (1/3) -->
     <div class="lg:col-span-1">
-        <div class="glass-card p-6 rounded-2xl">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+        <div class="glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl">
+            <div class="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
                     </svg>
                 </div>
                 <div>
-                    <h2 class="text-xl font-semibold text-noir dark:text-white">Registrar Pago</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Transferencia QR</p>
+                    <h2 class="text-base sm:text-xl font-semibold text-noir dark:text-white">Registrar Pago</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Transferencia QR</p>
                 </div>
             </div>
             
-            <form method="POST" action="" class="space-y-4">
+            <form method="POST" action="" class="space-y-3 sm:space-y-4">
                 <!-- Ocupación -->
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Huésped (Opcional)
                     </label>
-                    <select name="ocupacion_id" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 appearance-none">
+                    <select name="ocupacion_id" class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 appearance-none">
                         <option value="">Sin asociar a huésped</option>
                         <?php foreach ($ocupaciones_activas as $ocu): ?>
                             <option value="<?php echo $ocu['id']; ?>">
@@ -141,12 +147,12 @@ include __DIR__ . '/../../includes/header.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Opcional: vincular pago a una estadía</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Opcional: vincular pago</p>
                 </div>
                 
                 <!-- Monto -->
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Monto <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
@@ -156,7 +162,7 @@ include __DIR__ . '/../../includes/header.php';
                             step="0.01" 
                             name="monto" 
                             required
-                            class="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400"
+                            class="w-full pl-10 sm:pl-12 pr-3 py-2.5 sm:pr-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400"
                             placeholder="0.00"
                         >
                     </div>
@@ -164,21 +170,21 @@ include __DIR__ . '/../../includes/header.php';
                 
                 <!-- Número de Transacción -->
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Nro de Transacción
                     </label>
                     <input 
                         type="text" 
                         name="numero_transaccion"
-                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400"
-                        placeholder="Ej: TRX123456789"
+                        class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400"
+                        placeholder="TRX123456789"
                     >
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Código de la transferencia bancaria</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Código de transferencia</p>
                 </div>
                 
                 <!-- Fecha -->
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Fecha <span class="text-red-500">*</span>
                     </label>
                     <input 
@@ -186,19 +192,19 @@ include __DIR__ . '/../../includes/header.php';
                         name="fecha" 
                         value="<?php echo date('Y-m-d'); ?>"
                         required
-                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800"
+                        class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800"
                     >
                 </div>
                 
                 <!-- Observaciones -->
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Observaciones
                     </label>
                     <textarea 
                         name="observaciones" 
-                        rows="3"
-                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400 resize-none"
+                        rows="2"
+                        class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400 resize-none"
                         placeholder="Detalles adicionales..."
                     ></textarea>
                 </div>
@@ -207,7 +213,7 @@ include __DIR__ . '/../../includes/header.php';
                 <button 
                     type="submit" 
                     name="registrar_pago_qr"
-                    class="w-full px-6 py-3.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    class="w-full px-5 py-2.5 sm:px-6 sm:py-3.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-sm sm:text-base rounded-lg sm:rounded-xl font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md sm:shadow-lg hover:shadow-lg sm:hover:shadow-xl"
                 >
                     Registrar Pago QR
                 </button>

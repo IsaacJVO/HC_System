@@ -140,17 +140,19 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="container mx-auto px-4 py-8">
-    <div class="mb-6 flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Inventario de Habitaciones</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-2">Control físico de elementos en cada habitación</p>
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div class="flex-1">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Inventario de Habitaciones</h1>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">Control físico de elementos en cada habitación</p>
+            </div>
+            <?php if (esAdmin()): ?>
+            <button onclick="toggleEdicionMasiva()" 
+                    class="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                <i class="fas fa-table mr-2"></i>Edición Masiva
+            </button>
+            <?php endif; ?>
         </div>
-        <?php if (esAdmin()): ?>
-        <button onclick="toggleEdicionMasiva()" 
-                class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
-            <i class="fas fa-table mr-2"></i>Edición Masiva
-        </button>
-        <?php endif; ?>
     </div>
 
     <?php if ($mensaje): ?>

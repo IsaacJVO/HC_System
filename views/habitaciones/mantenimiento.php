@@ -16,6 +16,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['accion'])) {
             switch ($_POST['accion']) {
                 case 'crear':
+                    // Procesar imagen si se subió
+                    $imagen_nombre = null;
+                    if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
+                        $archivo = $_FILES['imagen'];
+                        $extension = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
+                        $extensiones_permitidas = ['jpg', 'jpeg', 'png'];
+                        $tamano_maximo = 5 * 1024 * 1024; // 5MB
+                        
+                        if (in_array($extension, $extensiones_permitidas) && $archivo['size'] <= $tamano_maximo) {
+                            // Generar nombre único: habitacion_fecha_hora.extension
+                            $habitacion_num = clean_input($_POST['habitacion_numero']);
+                            $timestamp = date('Ymd_His');
+                            $imagen_nombre = $habitacion_num . '_' . $timestamp . '.' . $extension;
+                            
+                            // Ruta donde se guardará
+                            $ruta_destino = __DIR__ . '/../../assets/img/Mantenimiento/' . $imagen_nombre;
+                            
+                            // Mover archivo
+                            if (!move_uploaded_file($archivo['tmp_name'], $ruta_destino)) {
+                                $imagen_nombre = null;
+                                $mensaje = 'Advertencia: No se pudo guardar la imagen, pero el mantenimiento fue registrado';
+                                $tipo_mensaje = 'warning';
+                            }
+                        }
+                    }
+                    
                     $datos = [
                         'habitacion_numero' => clean_input($_POST['habitacion_numero']),
                         'titulo' => clean_input($_POST['titulo']),
@@ -27,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'fecha_inicio' => $_POST['fecha_inicio'],
                         'fecha_fin_estimada' => !empty($_POST['fecha_fin_estimada']) ? $_POST['fecha_fin_estimada'] : null,
                         'responsable' => !empty($_POST['responsable']) ? clean_input($_POST['responsable']) : null,
-                        'observaciones' => !empty($_POST['observaciones']) ? clean_input($_POST['observaciones']) : null
+                        'observaciones' => !empty($_POST['observaciones']) ? clean_input($_POST['observaciones']) : null,
+                        'imagen' => $imagen_nombre
                     ];
                     
                     if ($mantenimientoModel->crear($datos)) {
@@ -37,8 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt = $conn->prepare($sql);
                         $stmt->execute([':numero' => $datos['habitacion_numero']]);
                         
-                        $mensaje = 'Mantenimiento registrado correctamente';
-                        $tipo_mensaje = 'success';
+                        if (!isset($mensaje)) {
+                            $mensaje = 'Mantenimiento registrado correctamente';
+                            $tipo_mensaje = 'success';
+                        }
                     } else {
                         $mensaje = 'Error al registrar mantenimiento';
                         $tipo_mensaje = 'error';
@@ -97,11 +126,53 @@ $habitaciones = $habitacionModel->obtenerTodas();
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<div class="container mx-auto px-4 py-8">
+<style>
+@media print {
+    .no-print { display: none !important; }
+    @page {
+        size: letter portrait;
+        margin: 0.5cm;
+    }
+    body {
+        background: white !important;
+        font-size: 9pt;
+    }
+    .print-container {
+        background: white !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+    h1 { font-size: 16pt; margin-bottom: 0.2cm; }
+    h2 { font-size: 12pt; margin-bottom: 0.2cm; }
+    .mantenimiento-item {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        padding: 0.2cm;
+        margin-bottom: 0.2cm;
+    }
+}
+</style>
+
+<div class="container mx-auto px-4 py-6 sm:py-8" id="print-content">
     <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Mantenimiento de Habitaciones</h1>
-        <p class="text-gray-600 dark:text-gray-400">Control y seguimiento de mantenimientos preventivos y correctivos</p>
+    <div class="mb-6 sm:mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div class="flex-1">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">Mantenimiento de Habitaciones</h1>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Control y seguimiento de mantenimientos preventivos y correctivos</p>
+            </div>
+            <div class="flex gap-2 no-print">
+                <button onclick="window.print()" class="px-4 py-2.5 bg-noir text-white rounded-lg hover:bg-opacity-80 transition flex items-center gap-2 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    Imprimir Informe
+                </button>
+                <a href="<?php echo BASE_PATH; ?>/index.php" class="px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
+                    ← Volver
+                </a>
+            </div>
+        </div>
     </div>
 
     <?php if ($mensaje): ?>
@@ -121,22 +192,24 @@ include __DIR__ . '/../../includes/header.php';
     <?php endif; ?>
 
     <!-- Botón Nuevo Mantenimiento -->
-    <div class="mb-6 flex justify-end">
-        <button onclick="abrirModal()" class="px-6 py-3 bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 text-white rounded-lg transition-all duration-200 hover:shadow-md flex items-center gap-2">
-            <i class="fas fa-plus"></i>
+    <div class="mb-6 flex justify-center sm:justify-end no-print">
+        <button onclick="abrirModal()" class="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 text-white rounded-lg transition-all duration-200 hover:shadow-md flex items-center gap-2">
+            <i class="fas fa-plus text-sm sm:text-base"></i>
             Nuevo Mantenimiento
         </button>
     </div>
 
     <!-- Lista de Mantenimientos -->
     <?php if (empty($mantenimientos)): ?>
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-        <i class="fas fa-wrench text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-        <p class="text-gray-600 dark:text-gray-400 text-lg">No hay mantenimientos activos</p>
-        <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">Haz clic en "Nuevo Mantenimiento" para registrar uno</p>
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 sm:p-12 text-center">
+        <i class="fas fa-wrench text-4xl sm:text-6xl text-gray-300 dark:text-gray-600 mb-3 sm:mb-4"></i>
+        <p class="text-gray-600 dark:text-gray-400 text-base sm:text-lg">No hay mantenimientos activos</p>
+        <p class="text-gray-500 dark:text-gray-500 text-xs sm:text-sm mt-2">Haz clic en "Nuevo Mantenimiento" para registrar uno</p>
     </div>
     <?php else: ?>
-    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+    
+    <!-- Vista de cuadrícula (pantalla) -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2 sm:gap-3 no-print">
         <?php foreach ($mantenimientos as $mant): 
             $prioridad_colores = [
                 'baja' => ['border' => 'border-gray-300 dark:border-gray-600', 'bg' => 'bg-gray-50 dark:bg-gray-700'],
@@ -147,10 +220,10 @@ include __DIR__ . '/../../includes/header.php';
             $colores = $prioridad_colores[$mant['prioridad']];
         ?>
         <button onclick='abrirDetalleMantenimiento(<?php echo json_encode($mant, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)' 
-                class="aspect-[3/4] rounded-lg border-2 <?php echo $colores['border']; ?> <?php echo $colores['bg']; ?> hover:shadow-lg transition-all duration-200 hover:scale-105 relative group">
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-3">
-                <span class="text-3xl font-bold text-gray-900 dark:text-white"><?php echo $mant['habitacion_numero']; ?></span>
-                <span class="text-xs text-gray-600 dark:text-gray-300 mt-2 text-center line-clamp-4 leading-tight"><?php echo htmlspecialchars($mant['titulo']); ?></span>
+                class="aspect-[3/4] rounded-lg border-2 <?php echo $colores['border']; ?> <?php echo $colores['bg']; ?> hover:shadow-lg transition-all duration-200 sm:hover:scale-105 relative group">
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-2 sm:p-3">
+                <span class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white"><?php echo $mant['habitacion_numero']; ?></span>
+                <span class="text-xs text-gray-600 dark:text-gray-300 mt-1 sm:mt-2 text-center line-clamp-3 sm:line-clamp-4 leading-tight"><?php echo htmlspecialchars($mant['titulo']); ?></span>
             </div>
             <?php if ($mant['prioridad'] === 'urgente'): ?>
             <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -163,30 +236,100 @@ include __DIR__ . '/../../includes/header.php';
         </button>
         <?php endforeach; ?>
     </div>
+    
+    <!-- Vista detallada para impresión -->
+    <div class="hidden print:block">
+        <div class="text-center mb-3">
+            <h1 class="text-xl font-bold">INFORME DE MANTENIMIENTOS</h1>
+            <p class="text-xs text-gray-600 mt-1">Hotel Cecil - <?php echo date('d/m/Y'); ?></p>
+        </div>
+        
+        <?php foreach ($mantenimientos as $mant): 
+            $prioridad_texto = [
+                'baja' => 'BAJA',
+                'media' => 'MEDIA',
+                'alta' => 'ALTA',
+                'urgente' => 'URGENTE'
+            ];
+        ?>
+        <div class="mantenimiento-item mb-2">
+            <div class="flex justify-between items-start mb-1">
+                <div>
+                    <h3 class="text-sm font-bold">Habitación <?php echo $mant['habitacion_numero']; ?></h3>
+                    <p class="text-xs font-semibold"><?php echo htmlspecialchars($mant['titulo']); ?></p>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs px-1 py-0.5 border border-gray-800 rounded">
+                        <?php echo $prioridad_texto[$mant['prioridad']]; ?>
+                    </span>
+                    <p class="text-xs mt-0.5"><?php echo ucfirst($mant['tipo']); ?></p>
+                </div>
+            </div>
+            
+            <div class="text-xs mb-1">
+                <strong>Descripción:</strong> <?php echo htmlspecialchars($mant['descripcion']); ?>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                    <strong>Estado:</strong> <?php echo ucfirst(str_replace('_', ' ', $mant['estado'])); ?>
+                </div>
+                <div>
+                    <strong>Fecha Inicio:</strong> <?php echo date('d/m/Y', strtotime($mant['fecha_inicio'])); ?>
+                </div>
+                <?php if ($mant['responsable']): ?>
+                <div>
+                    <strong>Responsable:</strong> <?php echo htmlspecialchars($mant['responsable']); ?>
+                </div>
+                <?php endif; ?>
+                <?php if ($mant['costo_estimado']): ?>
+                <div>
+                    <strong>Costo Estimado:</strong> Bs. <?php echo number_format($mant['costo_estimado'], 2); ?>
+                </div>
+                <?php endif; ?>
+                <?php if ($mant['fecha_fin_estimada']): ?>
+                <div>
+                    <strong>Fecha Fin Estimada:</strong> <?php echo date('d/m/Y', strtotime($mant['fecha_fin_estimada'])); ?>
+                </div>
+                <?php endif; ?>
+                <?php if ($mant['observaciones']): ?>
+                <div class="col-span-2">
+                    <strong>Observaciones:</strong> <?php echo htmlspecialchars($mant['observaciones']); ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        
+        <div class="text-center text-xs text-gray-500 mt-3 pt-2 border-t border-gray-300">
+            <p>Generado el <?php echo date('d/m/Y H:i'); ?> - Hotel Cecil</p>
+        </div>
+    </div>
+    
     <?php endif; ?>
 </div>
 
 <!-- Modal Nuevo Mantenimiento -->
-<div id="modalMantenimiento" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+<div id="modalMantenimiento" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
     <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Nuevo Mantenimiento</h2>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Nuevo Mantenimiento</h2>
                 <button onclick="cerrarModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    <i class="fas fa-times text-xl"></i>
+                    <i class="fas fa-times text-lg sm:text-xl"></i>
                 </button>
             </div>
         </div>
 
-        <form method="POST" action="" class="p-6 space-y-6">
+        <form method="POST" action="" enctype="multipart/form-data" class="p-4 sm:p-6 space-y-4 sm:space-y-6">
             <input type="hidden" name="accion" value="crear">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Habitación <span class="text-red-500">*</span>
                     </label>
-                    <select name="habitacion_numero" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
+                    <select name="habitacion_numero" required class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
                         <option value="">Seleccione habitación</option>
                         <?php foreach ($habitaciones as $hab): ?>
                         <option value="<?php echo $hab['numero']; ?>">
@@ -197,10 +340,10 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Prioridad <span class="text-red-500">*</span>
                     </label>
-                    <select name="prioridad" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
+                    <select name="prioridad" required class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
                         <option value="baja">Baja</option>
                         <option value="media" selected>Media</option>
                         <option value="alta">Alta</option>
@@ -209,12 +352,12 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Tipo <span class="text-red-500">*</span>
                     </label>
-                    <select name="tipo" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
+                    <select name="tipo" required class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
                         <option value="preventivo">Preventivo</option>
                         <option value="correctivo" selected>Correctivo</option>
                         <option value="emergencia">Emergencia</option>
@@ -222,49 +365,49 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Fecha Inicio <span class="text-red-500">*</span>
                     </label>
                     <input type="date" name="fecha_inicio" value="<?php echo date('Y-m-d'); ?>" required 
-                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
+                           class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Título <span class="text-red-500">*</span>
                 </label>
                 <input type="text" name="titulo" required 
                        placeholder="Ej: Reparación de tubería"
-                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
+                       class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Descripción <span class="text-red-500">*</span>
                 </label>
-                <textarea name="descripcion" required rows="4"
-                          placeholder="Describa detalladamente el problema y el trabajo necesario..."
-                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white"></textarea>
+                <textarea name="descripcion" required rows="3" class="sm:rows-4"
+                          placeholder="Describa el problema..."
+                          class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white"></textarea>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Responsable
                     </label>
                     <input type="text" name="responsable" 
                            placeholder="Nombre del responsable"
-                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
+                           class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Costo Estimado (Bs.)
                     </label>
                     <input type="number" name="costo_estimado" step="0.01" min="0"
                            placeholder="0.00"
-                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
+                           class="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-white">
                 </div>
             </div>
 
@@ -287,13 +430,36 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Fotografía (Opcional)
+                </label>
+                <div class="flex items-center gap-3">
+                    <label for="imagen-mantenimiento" class="flex-1 cursor-pointer">
+                        <div class="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-camera text-gray-400 dark:text-gray-500"></i>
+                                <span class="text-sm text-gray-600 dark:text-gray-400" id="filename-display">Subir imagen (JPG, PNG - Máx. 5MB)</span>
+                            </div>
+                        </div>
+                        <input type="file" id="imagen-mantenimiento" name="imagen" 
+                               accept="image/jpeg,image/jpg,image/png" 
+                               class="hidden"
+                               onchange="document.getElementById('filename-display').textContent = this.files[0] ? this.files[0].name : 'Subir imagen (JPG, PNG - Máx. 5MB)'">
+                    </label>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    <i class="fas fa-info-circle"></i> Puedes adjuntar una foto del problema (fuga, daño, etc.)
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button type="button" onclick="cerrarModal()" 
-                        class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+                        class="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
                     Cancelar
                 </button>
                 <button type="submit" 
-                        class="px-6 py-3 bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 text-white rounded-lg transition-all duration-200">
+                        class="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 text-white rounded-lg transition-all duration-200">
                     Registrar Mantenimiento
                 </button>
             </div>
@@ -302,21 +468,21 @@ include __DIR__ . '/../../includes/header.php';
 </div>
 
 <!-- Modal Detalle Mantenimiento -->
-<div id="modalDetalle" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+<div id="modalDetalle" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
     <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Habitación <span id="d-numero"></span></h2>
-                    <span id="d-prioridad-badge" class="px-3 py-1 rounded-full text-xs font-semibold uppercase"></span>
+        <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <h2 class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">Hab. <span id="d-numero"></span></h2>
+                    <span id="d-prioridad-badge" class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold uppercase whitespace-nowrap"></span>
                 </div>
-                <button onclick="cerrarDetalle()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    <i class="fas fa-times text-xl"></i>
+                <button onclick="cerrarDetalle()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex-shrink-0">
+                    <i class="fas fa-times text-lg sm:text-xl"></i>
                 </button>
             </div>
         </div>
 
-        <div class="p-6 space-y-6">
+        <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
             <!-- Título y tipo -->
             <div>
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2" id="d-titulo"></h3>
@@ -330,6 +496,16 @@ include __DIR__ . '/../../includes/header.php';
             <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
                 <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Descripción</p>
                 <p class="text-sm text-gray-600 dark:text-gray-400" id="d-descripcion"></p>
+            </div>
+
+            <!-- Imagen si existe -->
+            <div id="d-imagen-container" class="hidden">
+                <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Fotografía del problema</p>
+                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
+                    <img id="d-imagen" src="" alt="Imagen del mantenimiento" 
+                         class="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                         onclick="abrirImagenFullscreen(this.src)">
+                </div>
             </div>
 
             <!-- Información en grid -->
@@ -448,6 +624,15 @@ function abrirDetalleMantenimiento(mant) {
         observacionesContainer.classList.add('hidden');
     }
     
+    // Imagen si existe
+    const imagenContainer = document.getElementById('d-imagen-container');
+    if (mant.imagen) {
+        imagenContainer.classList.remove('hidden');
+        document.getElementById('d-imagen').src = '<?php echo BASE_PATH; ?>/assets/img/Mantenimiento/' + mant.imagen;
+    } else {
+        imagenContainer.classList.add('hidden');
+    }
+    
     // Botones según estado
     const btnIniciar = document.getElementById('btn-iniciar');
     const btnCompletar = document.getElementById('btn-completar');
@@ -530,6 +715,27 @@ document.addEventListener('keydown', function(e) {
         cerrarModal();
     }
 });
+
+// Función para abrir imagen en pantalla completa
+function abrirImagenFullscreen(src) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-90 z-[100] flex items-center justify-center p-4';
+    overlay.onclick = function() { this.remove(); };
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.className = 'max-w-full max-h-full object-contain rounded-lg';
+    img.onclick = function(e) { e.stopPropagation(); };
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
+    closeBtn.className = 'absolute top-4 right-4 text-white hover:text-gray-300 bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center';
+    closeBtn.onclick = function() { overlay.remove(); };
+    
+    overlay.appendChild(img);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+}
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

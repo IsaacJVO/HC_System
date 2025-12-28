@@ -11,7 +11,11 @@ define('TIMEZONE', 'America/La_Paz');
 
 // Ruta base del proyecto (ajusta esto según tu instalación)
 define('BASE_PATH', '/Sistem Hotel Cecil');
-define('BASE_URL', 'http://localhost' . BASE_PATH);
+
+// Detectar si se accede por ngrok o localhost
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+define('BASE_URL', $protocol . '://' . $host . BASE_PATH);
 
 // Establecer zona horaria
 date_default_timezone_set(TIMEZONE);

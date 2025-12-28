@@ -2,6 +2,12 @@
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../models/Finanzas.php';
 
+// Verificar que el usuario sea administrador
+if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'administrador') {
+    header('Location: ' . BASE_PATH . '/views/finanzas/resumen.php?error=acceso_denegado');
+    exit;
+}
+
 $page_title = 'Registro de Egresos';
 $mensaje = '';
 $tipo_mensaje = '';
@@ -62,12 +68,12 @@ include __DIR__ . '/../../includes/header.php';
 
 <!-- Page Header -->
 <div class="mb-8">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h1 class="text-4xl font-bold text-noir dark:text-white mb-2">Egresos - Salidas de Caja</h1>
-            <p class="text-gray-500 dark:text-gray-400">Registra gastos externos y de cafetería</p>
+            <h1 class="text-2xl md:text-4xl font-bold text-noir dark:text-white mb-2">Egresos - Salidas de Caja</h1>
+            <p class="text-sm md:text-base text-gray-500 dark:text-gray-400">Registra gastos externos y de cafetería</p>
         </div>
-        <a href="<?php echo BASE_PATH; ?>/index.php" class="px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 font-medium hover:bg-mist dark:hover:bg-gray-800 transition-all duration-200">
+        <a href="<?php echo BASE_PATH; ?>/index.php" class="px-3 md:px-6 py-2 md:py-3 border border-gray-300 dark:border-gray-700 rounded-lg md:rounded-xl text-gray-700 dark:text-gray-300 text-sm md:text-base font-medium hover:bg-mist dark:hover:bg-gray-800 transition-all duration-200 text-center">
             ← Volver
         </a>
     </div>
@@ -99,60 +105,60 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 <?php endif; ?>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
     <!-- Formulario de Registro -->
     <div class="lg:col-span-1">
-        <div class="glass-card p-6 rounded-2xl sticky top-4">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center">
+        <div class="glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl lg:sticky lg:top-4">
+            <div class="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg sm:rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
                 <div>
-                    <h2 class="text-xl font-semibold text-noir dark:text-white">Nueva Salida</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Registro rápido de egresos</p>
+                    <h2 class="text-base sm:text-xl font-semibold text-noir dark:text-white">Nueva Salida</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Registro de egresos</p>
                 </div>
             </div>
             
-            <form method="POST" action="" class="space-y-4">
+            <form method="POST" action="" class="space-y-3 sm:space-y-4">
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Tipo de Egreso <span class="text-red-500">*</span>
                     </label>
-                    <select name="categoria" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white appearance-none bg-white dark:bg-gray-800">
+                    <select name="categoria" required class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white appearance-none bg-white dark:bg-gray-800">
                         <option value="">Selecciona el tipo</option>
-                        <option value="Externo" <?php echo (isset($_POST['categoria']) && $_POST['categoria'] == 'Externo') ? 'selected' : ''; ?>>💼 Gastos Externos (factores externos)</option>
-                        <option value="Cafetería" <?php echo (isset($_POST['categoria']) && $_POST['categoria'] == 'Cafetería') ? 'selected' : ''; ?>>☕ Gastos de Cafetería</option>
+                        <option value="Externo" <?php echo (isset($_POST['categoria']) && $_POST['categoria'] == 'Externo') ? 'selected' : ''; ?>>Gastos Externos</option>
+                        <option value="Cafetería" <?php echo (isset($_POST['categoria']) && $_POST['categoria'] == 'Cafetería') ? 'selected' : ''; ?>>Gastos de Cafetería</option>
                     </select>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Descripción <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="concepto" 
                            value="<?php echo isset($_POST['concepto']) ? htmlspecialchars($_POST['concepto']) : ''; ?>"
                            required
-                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800"
+                           class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800"
                            placeholder="Descripción breve...">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Monto (Bs.) <span class="text-red-500">*</span>
                     </label>
                     <input type="number" step="0.01" name="monto" 
                            value="<?php echo isset($_POST['monto']) ? htmlspecialchars($_POST['monto']) : ''; ?>"
                            min="0.01" required
-                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800"
+                           class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800"
                            placeholder="0.00">
                 </div>
                 
                 <input type="hidden" name="fecha" value="<?php echo date('Y-m-d'); ?>">
                 <input type="hidden" name="observaciones" value="">
                 
-                <button type="submit" name="registrar_egreso" class="w-full px-6 py-3.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                <button type="submit" name="registrar_egreso" class="w-full px-5 py-2.5 sm:px-6 sm:py-3.5 bg-gradient-to-r from-red-600 to-red-700 text-white text-sm sm:text-base rounded-lg sm:rounded-xl font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-md sm:shadow-lg hover:shadow-lg sm:hover:shadow-xl">
                     Registrar Egreso
                 </button>
             </form>
@@ -161,11 +167,11 @@ include __DIR__ . '/../../includes/header.php';
     
     <!-- Lista de Egresos -->
     <div class="lg:col-span-2">
-        <div class="glass-card p-6 rounded-2xl">
-            <div class="flex items-center justify-between mb-6">
+        <div class="glass-card p-4 sm:p-6 rounded-xl sm:rounded-2xl">
+            <div class="flex items-center justify-between mb-4 sm:mb-6">
                 <div>
-                    <h2 class="text-xl font-semibold text-noir dark:text-white">Lista de Egresos</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Historial de gastos registrados</p>
+                    <h2 class="text-base sm:text-xl font-semibold text-noir dark:text-white">Lista de Egresos</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Historial registrado</p>
                 </div>
             </div>
             
@@ -184,8 +190,8 @@ include __DIR__ . '/../../includes/header.php';
                                class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-noir focus:border-transparent bg-white dark:bg-gray-900 text-noir dark:text-white">
                     </div>
                     <div class="flex items-end">
-                        <button type="submit" class="w-full px-4 py-2.5 bg-noir dark:bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-200">
-                            🔍 Filtrar
+                        <button type="submit" class="w-full px-4 py-2.5 bg-noir dark:bg-gray-800 text-white text-sm sm:text-base font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-200">
+                            Filtrar
                         </button>
                     </div>
                 </form>
