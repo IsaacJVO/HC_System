@@ -1,16 +1,46 @@
 <?php
-// Configuración de la base de datos
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'hotel_cecil');
+// Cargar variables de entorno desde .env
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        die("Error: Archivo .env no encontrado. Copia .env.example como .env y configúralo.");
+    }
+    
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Ignorar comentarios
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        
+        // Parsear línea
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+        
+        // Definir constante si no existe
+        if (!defined($name)) {
+            define($name, $value);
+        }
+    }
+}
+
+// Cargar configuración desde .env
+loadEnv(__DIR__ . '/../.env');
 
 // Configuración general del sistema
 define('SITE_NAME', 'Hotel Cecil - Sistema de Gestión');
 define('TIMEZONE', 'America/La_Paz');
 
-// Ruta base del proyecto (ajusta esto según tu instalación)
-define('BASE_PATH', '/Sistem Hotel Cecil');
+// Detectar entorno y configurar rutas
+$isProduction = (defined('ENVIRONMENT') && constant('ENVIRONMENT') === 'production');
+
+if ($isProduction) {
+    // Configuración para Hostinger (ajustar cuando subas)
+    define('BASE_PATH', ''); // En Hostinger suele estar en la raíz
+} else {
+    // Configuración local (XAMPP con ngrok)
+    define('BASE_PATH', '/Sistem Hotel Cecil');
+}
 
 // Detectar si se accede por ngrok o localhost
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -27,9 +57,9 @@ function getConnection() {
     if ($conn === null) {
         try {
             $conn = new PDO(
-                "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-                DB_USER,
-                DB_PASS,
+                "mysql:host=" . constant('DB_HOST') . ";dbname=" . constant('DB_NAME') . ";charset=utf8mb4",
+                constant('DB_USER'),
+                constant('DB_PASS'),
                 [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

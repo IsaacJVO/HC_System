@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 20-12-2025 a las 10:36:06
+-- Tiempo de generación: 28-12-2025 a las 02:56:55
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -40,31 +40,6 @@ CREATE TABLE `egresos` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `usuarios`
---
-
-CREATE TABLE `usuarios` (
-  `id` int(11) NOT NULL,
-  `usuario` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `nombre_completo` varchar(255) DEFAULT NULL,
-  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
-  `ultimo_acceso` datetime DEFAULT NULL,
-  `activo` tinyint(1) DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `usuarios`
--- Usuario: Hotel Cecil
--- Contraseña: rodolfo106control (hasheada con PASSWORD_DEFAULT de PHP)
---
-
-INSERT INTO `usuarios` (`id`, `usuario`, `password`, `nombre_completo`, `activo`) VALUES
-(1, 'Hotel Cecil', '$2y$10$KtVhWU3au1rkpbMUIX/UUu7QUYn0OviukezCp3EHyANfJB2Ykz6B2', 'Hotel Cecil - Administrador', 1);
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `habitaciones`
 --
 
@@ -81,10 +56,10 @@ CREATE TABLE `habitaciones` (
 --
 
 INSERT INTO `habitaciones` (`id`, `numero`, `tipo`, `precio_dia`, `estado`) VALUES
-(1, '102', 'Doble', 220.00, 'mantenimiento'),
+(1, '102', 'Doble', 220.00, 'disponible'),
 (2, '103', 'Matrimonial', 220.00, 'disponible'),
 (3, '104', 'Matrimonial', 220.00, 'disponible'),
-(4, '201', 'Individual', 140.00, 'mantenimiento'),
+(4, '201', 'Individual', 140.00, 'disponible'),
 (5, '202', 'Individual', 140.00, 'disponible'),
 (6, '203', 'Individual', 140.00, 'disponible'),
 (7, '204', 'Individual', 140.00, 'disponible'),
@@ -145,12 +120,93 @@ CREATE TABLE `ingresos` (
   `observaciones` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
 --
--- Volcado de datos para la tabla `ingresos`
+-- Estructura de tabla para la tabla `inventario_habitaciones`
 --
 
-INSERT INTO `ingresos` (`id`, `ocupacion_id`, `concepto`, `monto`, `metodo_pago`, `fecha`, `hora`, `observaciones`) VALUES
-(3, 14, 'Pago habitación 205 - 2 día(s)', 440.00, 'efectivo', '2025-12-15', '03:59:02', 'Ingreso automático por registro de huésped');
+CREATE TABLE `inventario_habitaciones` (
+  `id` int(11) NOT NULL,
+  `habitacion_numero` varchar(10) NOT NULL,
+  `tipo` varchar(20) DEFAULT 'habitacion',
+  `cortinas` int(11) DEFAULT 0,
+  `veladores` int(11) DEFAULT 0,
+  `roperos` int(11) DEFAULT 0,
+  `colgadores` int(11) DEFAULT 0,
+  `basureros` int(11) DEFAULT 0,
+  `shampoo` int(11) DEFAULT 0,
+  `jabon_liquido` int(11) DEFAULT 0,
+  `sillas` int(11) DEFAULT 0,
+  `sillones` int(11) DEFAULT 0,
+  `alfombras` int(11) DEFAULT 0,
+  `camas` int(11) DEFAULT 0,
+  `television` int(11) DEFAULT 0,
+  `lamparas` int(11) DEFAULT 0,
+  `manteles` int(11) DEFAULT 0,
+  `cubrecamas` int(11) DEFAULT 0,
+  `sabanas_media_plaza` int(11) DEFAULT 0,
+  `sabanas_doble_plaza` int(11) DEFAULT 0,
+  `almohadas` int(11) DEFAULT 0,
+  `fundas` int(11) DEFAULT 0,
+  `frazadas` int(11) DEFAULT 0,
+  `toallas` int(11) DEFAULT 0,
+  `cortinas_almacen` int(11) DEFAULT 0,
+  `alfombras_almacen` int(11) DEFAULT 0,
+  `ultima_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `inventario_habitaciones`
+--
+
+INSERT INTO `inventario_habitaciones` (`id`, `habitacion_numero`, `tipo`, `cortinas`, `veladores`, `roperos`, `colgadores`, `basureros`, `shampoo`, `jabon_liquido`, `sillas`, `sillones`, `alfombras`, `camas`, `television`, `lamparas`, `manteles`, `cubrecamas`, `sabanas_media_plaza`, `sabanas_doble_plaza`, `almohadas`, `fundas`, `frazadas`, `toallas`, `cortinas_almacen`, `alfombras_almacen`, `ultima_actualizacion`) VALUES
+(1, 'ALMACEN', 'almacen', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-28 00:38:19'),
+(2, '102', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-28 00:38:37'),
+(3, '103', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(4, '104', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(5, '201', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(6, '202', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(7, '203', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(8, '204', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(9, '205', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(10, '206', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(11, '207', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(12, '208', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(13, '209', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(14, '301', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(15, '302', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(16, '303', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(17, '304', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(18, '305', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(19, '306', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23'),
+(20, '307', 'habitacion', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2025-12-24 05:42:23');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `mantenimientos`
+--
+
+CREATE TABLE `mantenimientos` (
+  `id` int(11) NOT NULL,
+  `habitacion_numero` varchar(10) NOT NULL,
+  `titulo` varchar(200) NOT NULL,
+  `descripcion` text NOT NULL,
+  `prioridad` enum('baja','media','alta','urgente') NOT NULL DEFAULT 'media',
+  `tipo` enum('preventivo','correctivo','emergencia') NOT NULL DEFAULT 'correctivo',
+  `estado` enum('pendiente','en_proceso','completado','cancelado') NOT NULL DEFAULT 'pendiente',
+  `costo_estimado` decimal(10,2) DEFAULT NULL,
+  `costo_real` decimal(10,2) DEFAULT NULL,
+  `fecha_inicio` date NOT NULL,
+  `fecha_fin_estimada` date DEFAULT NULL,
+  `fecha_fin_real` date DEFAULT NULL,
+  `responsable` varchar(100) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL,
+  `imagen` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -166,6 +222,22 @@ CREATE TABLE `pagos_qr` (
   `hora` time DEFAULT NULL,
   `numero_transaccion` varchar(100) DEFAULT NULL,
   `observaciones` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `registro_garaje`
+--
+
+CREATE TABLE `registro_garaje` (
+  `id` int(11) NOT NULL,
+  `ocupacion_id` int(11) NOT NULL,
+  `huesped_nombre` varchar(255) NOT NULL,
+  `fecha` date NOT NULL,
+  `costo` decimal(10,2) NOT NULL DEFAULT 10.00,
+  `observaciones` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -188,12 +260,30 @@ CREATE TABLE `registro_ocupacion` (
   `estado` enum('activo','finalizado') DEFAULT 'activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
 --
--- Volcado de datos para la tabla `registro_ocupacion`
+-- Estructura de tabla para la tabla `usuarios`
 --
 
-INSERT INTO `registro_ocupacion` (`id`, `huesped_id`, `habitacion_id`, `nro_pieza`, `prox_destino`, `via_ingreso`, `fecha_ingreso`, `nro_dias`, `fecha_salida_estimada`, `fecha_salida_real`, `estado`) VALUES
-(14, 11, 8, '205', 'Potosí', 'T', '2025-12-15', 2, '2025-12-17', '2025-12-20', 'finalizado');
+CREATE TABLE `usuarios` (
+  `id` int(11) NOT NULL,
+  `usuario` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `nombre_completo` varchar(255) DEFAULT NULL,
+  `rol` enum('administrador','usuario') NOT NULL DEFAULT 'usuario',
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ultimo_acceso` datetime DEFAULT NULL,
+  `activo` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `usuarios`
+--
+
+INSERT INTO `usuarios` (`id`, `usuario`, `password`, `nombre_completo`, `rol`, `fecha_creacion`, `ultimo_acceso`, `activo`) VALUES
+(1, 'Hotel Cecil', '$2y$10$KtVhWU3au1rkpbMUIX/UUu7QUYn0OviukezCp3EHyANfJB2Ykz6B2', 'Hotel Cecil - Administrador', 'administrador', '2025-12-24 00:21:00', '2025-12-27 19:55:22', 1),
+(2, 'Isaac Vargas', '$2y$10$Cy/hv5u8LKYkQpcpXbFwHeWpRwCL4j4iZfYCGqbznO3r3luwHNyna', 'Isaac Vargas', 'usuario', '2025-12-24 23:29:05', '2025-12-26 21:16:07', 1);
 
 --
 -- Índices para tablas volcadas
@@ -234,12 +324,38 @@ ALTER TABLE `ingresos`
   ADD KEY `idx_metodo_pago` (`metodo_pago`);
 
 --
+-- Indices de la tabla `inventario_habitaciones`
+--
+ALTER TABLE `inventario_habitaciones`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `habitacion_numero` (`habitacion_numero`),
+  ADD KEY `idx_habitacion` (`habitacion_numero`),
+  ADD KEY `idx_tipo` (`tipo`);
+
+--
+-- Indices de la tabla `mantenimientos`
+--
+ALTER TABLE `mantenimientos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_habitacion` (`habitacion_numero`),
+  ADD KEY `idx_estado` (`estado`),
+  ADD KEY `idx_prioridad` (`prioridad`);
+
+--
 -- Indices de la tabla `pagos_qr`
 --
 ALTER TABLE `pagos_qr`
   ADD PRIMARY KEY (`id`),
   ADD KEY `ocupacion_id` (`ocupacion_id`),
   ADD KEY `idx_fecha` (`fecha`);
+
+--
+-- Indices de la tabla `registro_garaje`
+--
+ALTER TABLE `registro_garaje`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_fecha` (`fecha`),
+  ADD KEY `idx_ocupacion` (`ocupacion_id`);
 
 --
 -- Indices de la tabla `registro_ocupacion`
@@ -266,7 +382,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `egresos`
 --
 ALTER TABLE `egresos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `habitaciones`
@@ -278,31 +394,49 @@ ALTER TABLE `habitaciones`
 -- AUTO_INCREMENT de la tabla `huespedes`
 --
 ALTER TABLE `huespedes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT de la tabla `ingresos`
 --
 ALTER TABLE `ingresos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT de la tabla `inventario_habitaciones`
+--
+ALTER TABLE `inventario_habitaciones`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT de la tabla `mantenimientos`
+--
+ALTER TABLE `mantenimientos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT de la tabla `pagos_qr`
 --
 ALTER TABLE `pagos_qr`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `registro_garaje`
+--
+ALTER TABLE `registro_garaje`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `registro_ocupacion`
 --
 ALTER TABLE `registro_ocupacion`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Restricciones para tablas volcadas
@@ -319,6 +453,12 @@ ALTER TABLE `ingresos`
 --
 ALTER TABLE `pagos_qr`
   ADD CONSTRAINT `pagos_qr_ibfk_1` FOREIGN KEY (`ocupacion_id`) REFERENCES `registro_ocupacion` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `registro_garaje`
+--
+ALTER TABLE `registro_garaje`
+  ADD CONSTRAINT `registro_garaje_ibfk_1` FOREIGN KEY (`ocupacion_id`) REFERENCES `registro_ocupacion` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `registro_ocupacion`

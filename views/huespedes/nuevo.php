@@ -170,17 +170,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($acomp_existente) {
                         $acomp_huesped_id = $acomp_existente['id'];
                     } else {
-                        // Crear nuevo acompañante
+                        // Crear nuevo acompañante con todos los campos
                         $datos_acomp = [
                             'nombres_apellidos' => clean_input($_POST['acomp_nombres'][$i]),
                             'genero' => $_POST['acomp_genero'][$i],
                             'edad' => (int)$_POST['acomp_edad'][$i],
-                            'estado_civil' => null,
+                            'estado_civil' => isset($_POST['acomp_estado_civil'][$i]) ? clean_input($_POST['acomp_estado_civil'][$i]) : null,
                             'nacionalidad' => clean_input($_POST['acomp_nacionalidad'][$i]),
                             'ci_pasaporte' => clean_input($_POST['acomp_ci'][$i]),
-                            'profesion' => null,
-                            'objeto' => isset($_POST['acomp_relacion'][$i]) ? clean_input($_POST['acomp_relacion'][$i]) : null,
-                            'procedencia' => null
+                            'profesion' => isset($_POST['acomp_profesion'][$i]) ? clean_input($_POST['acomp_profesion'][$i]) : null,
+                            'objeto' => isset($_POST['acomp_objeto'][$i]) ? clean_input($_POST['acomp_objeto'][$i]) : null,
+                            'procedencia' => isset($_POST['acomp_procedencia'][$i]) ? clean_input($_POST['acomp_procedencia'][$i]) : null
                         ];
                         
                         $acomp_huesped_id = $huespedModel->crear($datos_acomp);
@@ -947,6 +947,23 @@ function agregarAcompanante() {
                 </div>
                 
                 <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Estado Civil <span class="text-red-500">*</span></label>
+                    <select 
+                        name="acomp_estado_civil[]" 
+                        id="acomp_estado_civil_${contadorAcompanantes}"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                        <option value="">Seleccione</option>
+                        <option value="Soltero/a">Soltero/a</option>
+                        <option value="Casado/a">Casado/a</option>
+                        <option value="Divorciado/a">Divorciado/a</option>
+                        <option value="Viudo/a">Viudo/a</option>
+                        <option value="Unión libre">Unión libre</option>
+                    </select>
+                </div>
+                
+                <div>
                     <label class="block text-xs font-semibold text-noir mb-1">Nacionalidad <span class="text-red-500">*</span></label>
                     <input 
                         type="text" 
@@ -960,13 +977,45 @@ function agregarAcompanante() {
                 </div>
                 
                 <div>
-                    <label class="block text-xs font-semibold text-noir mb-1">Relación</label>
+                    <label class="block text-xs font-semibold text-noir mb-1">Profesión <span class="text-red-500">*</span></label>
                     <input 
                         type="text" 
-                        name="acomp_relacion[]" 
-                        id="acomp_relacion_${contadorAcompanantes}"
+                        name="acomp_profesion[]" 
+                        id="acomp_profesion_${contadorAcompanantes}"
+                        required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                        placeholder="Ej: Esposo/a, Hijo/a, Amigo/a"
+                        placeholder="Ocupación"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Objeto del Viaje <span class="text-red-500">*</span></label>
+                    <select 
+                        name="acomp_objeto[]" 
+                        id="acomp_objeto_${contadorAcompanantes}"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                        <option value="">Seleccione</option>
+                        <option value="Turismo">Turismo</option>
+                        <option value="Negocios">Negocios</option>
+                        <option value="Salud">Salud</option>
+                        <option value="Educación">Educación</option>
+                        <option value="Familiar">Familiar</option>
+                        <option value="Tránsito">Tránsito</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-noir mb-1">Procedencia <span class="text-red-500">*</span></label>
+                    <input 
+                        type="text" 
+                        name="acomp_procedencia[]" 
+                        id="acomp_procedencia_${contadorAcompanantes}"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        placeholder="Ciudad de origen"
                     >
                 </div>
             </div>
@@ -1040,7 +1089,11 @@ function buscarAcompanantePorCI(id) {
                 document.getElementById('acomp_nombres_' + id).value = data.huesped.nombres_apellidos || '';
                 document.getElementById('acomp_genero_' + id).value = data.huesped.genero || '';
                 document.getElementById('acomp_edad_' + id).value = data.huesped.edad || '';
+                document.getElementById('acomp_estado_civil_' + id).value = data.huesped.estado_civil || '';
                 document.getElementById('acomp_nacionalidad_' + id).value = data.huesped.nacionalidad || '';
+                document.getElementById('acomp_profesion_' + id).value = data.huesped.profesion || '';
+                document.getElementById('acomp_objeto_' + id).value = data.huesped.objeto || '';
+                document.getElementById('acomp_procedencia_' + id).value = data.huesped.procedencia || '';
                 
                 // Mostrar mensaje de éxito
                 const acompananteDiv = document.getElementById('acompanante_' + id);

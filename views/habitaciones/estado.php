@@ -29,10 +29,29 @@ $stmt = $conn->prepare($sql);
 $stmt->execute();
 $ocupaciones_activas = $stmt->fetchAll();
 
-// Indexar por número de habitación
+// Indexar por número de habitación - MODIFICADO para soportar múltiples huéspedes
 $huespedes_por_habitacion = [];
 foreach ($ocupaciones_activas as $ocup) {
-    $huespedes_por_habitacion[$ocup['habitacion_numero']] = $ocup;
+    // Si ya existe un huésped en esta habitación, crear un array
+    if (!isset($huespedes_por_habitacion[$ocup['habitacion_numero']])) {
+        $huespedes_por_habitacion[$ocup['habitacion_numero']] = $ocup;
+    } else {
+        // Si ya hay un huésped, convertir a array de múltiples huéspedes
+        if (!isset($huespedes_por_habitacion[$ocup['habitacion_numero']]['multiples'])) {
+            // Guardar el primer huésped
+            $primer_huesped = $huespedes_por_habitacion[$ocup['habitacion_numero']];
+            $huespedes_por_habitacion[$ocup['habitacion_numero']] = [
+                'multiples' => true,
+                'huespedes' => [$primer_huesped, $ocup],
+                'habitacion_numero' => $ocup['habitacion_numero'],
+                'nro_dias' => $ocup['nro_dias'],
+                'fecha_ingreso' => $ocup['fecha_ingreso']
+            ];
+        } else {
+            // Agregar más huéspedes
+            $huespedes_por_habitacion[$ocup['habitacion_numero']]['huespedes'][] = $ocup;
+        }
+    }
 }
 
 // Procesar cambios de estado
@@ -55,6 +74,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['habitacion_id'])) {
 }
 
 $habitaciones = $habitacionModel->obtenerTodas();
+
+// IMPORTANTE: Refrescar los datos de habitaciones para obtener el estado actualizado
+// porque puede haber cambiado después de registrar ocupaciones
+$conn = getConnection();
+$sql_refresh = "SELECT * FROM habitaciones ORDER BY numero";
+$stmt_refresh = $conn->prepare($sql_refresh);
+$stmt_refresh->execute();
+$habitaciones = $stmt_refresh->fetchAll(PDO::FETCH_ASSOC);
+
+// DEBUG TEMPORAL: Verificar habitación 104
+foreach ($habitaciones as $h) {
+    if ($h['numero'] == '104') {
+        error_log("DEBUG - Habitación 104 después de fetch:");
+        error_log("  numero: " . ($h['numero'] ?? 'NULL'));
+        error_log("  estado: '" . ($h['estado'] ?? 'NULL') . "'");
+        error_log("  tipo: " . ($h['tipo'] ?? 'NULL'));
+        error_log("Array completo: " . print_r($h, true));
+    }
+}
+
 
 // Debug: registrar habitaciones ocupadas (después de obtener $habitaciones)
 error_log("=== DEBUG HABITACIONES OCUPADAS ===");
@@ -491,6 +530,7 @@ body {
 const statusMap = {
     'disponible': { text: 'Disponible', class: 'disponible' },
     'ocupada': { text: 'Ocupada', class: 'ocupado' },
+    'ocupado': { text: 'Ocupada', class: 'ocupado' },
     'limpieza': { text: 'Necesita limpieza', class: 'limpieza' },
     'mantenimiento': { text: 'En mantenimiento', class: 'mantenimiento' }
 };
@@ -505,13 +545,19 @@ const prioridadMap = {
 function openModal(room, mantenimiento = null, huesped = null) {
     console.log('Estado de habitación:', room.estado);
     console.log('Datos de huésped:', huesped);
+    console.log('Room completo:', room);
     
     document.getElementById('m-numero').textContent = room.numero;
     document.getElementById('m-tipo').textContent = room.tipo;
     document.getElementById('m-precio').textContent = parseFloat(room.precio_dia).toFixed(2);
     document.getElementById('m-id').value = room.id;
     
-    const status = statusMap[room.estado];
+    // Validar que el estado existe en statusMap
+    const status = statusMap[room.estado] || statusMap['disponible'];
+    if (!statusMap[room.estado]) {
+        console.error('Estado no encontrado en statusMap:', room.estado);
+    }
+    
     document.getElementById('m-status-dot').className = 'status-dot ' + status.class;
     document.getElementById('m-status-text').textContent = status.text;
     
@@ -541,13 +587,29 @@ function openModal(room, mantenimiento = null, huesped = null) {
         huespedInfo.classList.remove('hidden');
         formEstado.classList.add('hidden'); // Ocultar formulario de cambio de estado
         
-        document.getElementById('m-huesped-nombre').textContent = huesped.nombres_apellidos;
-        document.getElementById('m-huesped-ci').textContent = huesped.ci_pasaporte;
-        document.getElementById('m-huesped-genero').textContent = huesped.genero === 'M' ? 'Masculino' : 'Femenino';
-        document.getElementById('m-huesped-edad').textContent = huesped.edad;
-        document.getElementById('m-huesped-dias').textContent = huesped.nro_dias;
-        document.getElementById('m-huesped-checkin').textContent = new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO');
-        document.getElementById('m-huesped-nacionalidad').textContent = huesped.nacionalidad;
+        // Verificar si hay múltiples huéspedes
+        if (huesped.multiples && huesped.huespedes) {
+            // Hay múltiples huéspedes
+            const numHuespedes = huesped.huespedes.length;
+            const primerHuesped = huesped.huespedes[0];
+            
+            document.getElementById('m-huesped-nombre').textContent = `${numHuespedes} Huéspedes`;
+            document.getElementById('m-huesped-ci').textContent = huesped.huespedes.map(h => h.nombres_apellidos).join(', ');
+            document.getElementById('m-huesped-genero').textContent = '-';
+            document.getElementById('m-huesped-edad').textContent = '-';
+            document.getElementById('m-huesped-dias').textContent = huesped.nro_dias;
+            document.getElementById('m-huesped-checkin').textContent = new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO');
+            document.getElementById('m-huesped-nacionalidad').textContent = huesped.huespedes.map(h => h.nacionalidad).join(', ');
+        } else {
+            // Un solo huésped
+            document.getElementById('m-huesped-nombre').textContent = huesped.nombres_apellidos;
+            document.getElementById('m-huesped-ci').textContent = huesped.ci_pasaporte;
+            document.getElementById('m-huesped-genero').textContent = huesped.genero === 'M' ? 'Masculino' : 'Femenino';
+            document.getElementById('m-huesped-edad').textContent = huesped.edad;
+            document.getElementById('m-huesped-dias').textContent = huesped.nro_dias;
+            document.getElementById('m-huesped-checkin').textContent = new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO');
+            document.getElementById('m-huesped-nacionalidad').textContent = huesped.nacionalidad;
+        }
     } else {
         huespedInfo.classList.add('hidden');
         formEstado.classList.remove('hidden'); // Mostrar formulario si no está ocupada

@@ -126,32 +126,7 @@ $habitaciones = $habitacionModel->obtenerTodas();
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<style>
-@media print {
-    .no-print { display: none !important; }
-    @page {
-        size: letter portrait;
-        margin: 0.5cm;
-    }
-    body {
-        background: white !important;
-        font-size: 9pt;
-    }
-    .print-container {
-        background: white !important;
-        box-shadow: none !important;
-        border: none !important;
-    }
-    h1 { font-size: 16pt; margin-bottom: 0.2cm; }
-    h2 { font-size: 12pt; margin-bottom: 0.2cm; }
-    .mantenimiento-item {
-        page-break-inside: avoid;
-        border: 1px solid #000;
-        padding: 0.2cm;
-        margin-bottom: 0.2cm;
-    }
-}
-</style>
+
 
 <div class="container mx-auto px-4 py-6 sm:py-8" id="print-content">
     <!-- Header -->
@@ -162,11 +137,11 @@ include __DIR__ . '/../../includes/header.php';
                 <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Control y seguimiento de mantenimientos preventivos y correctivos</p>
             </div>
             <div class="flex gap-2 no-print">
-                <button onclick="window.print()" class="px-4 py-2.5 bg-noir text-white rounded-lg hover:bg-opacity-80 transition flex items-center gap-2 text-sm">
+                <button onclick="window.open('<?php echo BASE_PATH; ?>/views/habitaciones/generar_pdf_mantenimientos.php', '_blank')" class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition flex items-center gap-2 text-sm shadow-md">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    Imprimir Informe
+                    Generar PDF
                 </button>
                 <a href="<?php echo BASE_PATH; ?>/index.php" class="px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
                     ← Volver
@@ -235,75 +210,6 @@ include __DIR__ . '/../../includes/header.php';
             </div>
         </button>
         <?php endforeach; ?>
-    </div>
-    
-    <!-- Vista detallada para impresión -->
-    <div class="hidden print:block">
-        <div class="text-center mb-3">
-            <h1 class="text-xl font-bold">INFORME DE MANTENIMIENTOS</h1>
-            <p class="text-xs text-gray-600 mt-1">Hotel Cecil - <?php echo date('d/m/Y'); ?></p>
-        </div>
-        
-        <?php foreach ($mantenimientos as $mant): 
-            $prioridad_texto = [
-                'baja' => 'BAJA',
-                'media' => 'MEDIA',
-                'alta' => 'ALTA',
-                'urgente' => 'URGENTE'
-            ];
-        ?>
-        <div class="mantenimiento-item mb-2">
-            <div class="flex justify-between items-start mb-1">
-                <div>
-                    <h3 class="text-sm font-bold">Habitación <?php echo $mant['habitacion_numero']; ?></h3>
-                    <p class="text-xs font-semibold"><?php echo htmlspecialchars($mant['titulo']); ?></p>
-                </div>
-                <div class="text-right">
-                    <span class="text-xs px-1 py-0.5 border border-gray-800 rounded">
-                        <?php echo $prioridad_texto[$mant['prioridad']]; ?>
-                    </span>
-                    <p class="text-xs mt-0.5"><?php echo ucfirst($mant['tipo']); ?></p>
-                </div>
-            </div>
-            
-            <div class="text-xs mb-1">
-                <strong>Descripción:</strong> <?php echo htmlspecialchars($mant['descripcion']); ?>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                    <strong>Estado:</strong> <?php echo ucfirst(str_replace('_', ' ', $mant['estado'])); ?>
-                </div>
-                <div>
-                    <strong>Fecha Inicio:</strong> <?php echo date('d/m/Y', strtotime($mant['fecha_inicio'])); ?>
-                </div>
-                <?php if ($mant['responsable']): ?>
-                <div>
-                    <strong>Responsable:</strong> <?php echo htmlspecialchars($mant['responsable']); ?>
-                </div>
-                <?php endif; ?>
-                <?php if ($mant['costo_estimado']): ?>
-                <div>
-                    <strong>Costo Estimado:</strong> Bs. <?php echo number_format($mant['costo_estimado'], 2); ?>
-                </div>
-                <?php endif; ?>
-                <?php if ($mant['fecha_fin_estimada']): ?>
-                <div>
-                    <strong>Fecha Fin Estimada:</strong> <?php echo date('d/m/Y', strtotime($mant['fecha_fin_estimada'])); ?>
-                </div>
-                <?php endif; ?>
-                <?php if ($mant['observaciones']): ?>
-                <div class="col-span-2">
-                    <strong>Observaciones:</strong> <?php echo htmlspecialchars($mant['observaciones']); ?>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endforeach; ?>
-        
-        <div class="text-center text-xs text-gray-500 mt-3 pt-2 border-t border-gray-300">
-            <p>Generado el <?php echo date('d/m/Y H:i'); ?> - Hotel Cecil</p>
-        </div>
     </div>
     
     <?php endif; ?>

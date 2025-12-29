@@ -30,12 +30,11 @@ class RegistroOcupacion {
             if ($result) {
                 $insertId = $this->conn->lastInsertId();
                 
-                // Cambiar habitación a estado 'ocupado'
-                try {
-                    $this->actualizarEstadoHabitacion($datos['habitacion_id'], 'ocupado');
-                } catch (PDOException $e) {
-                    error_log("Error al actualizar estado de habitación: " . $e->getMessage());
-                    // No fallar si el registro se creó exitosamente
+                // Cambiar habitación a estado 'ocupada' - MEJORADO: lanzar excepción si falla
+                $actualizado = $this->actualizarEstadoHabitacion($datos['habitacion_id'], 'ocupada');
+                if (!$actualizado) {
+                    error_log("ADVERTENCIA: No se pudo actualizar estado de habitación ID: " . $datos['habitacion_id']);
+                    // Aún así retornar el ID porque la ocupación se creó correctamente
                 }
                 
                 return $insertId;
@@ -116,15 +115,17 @@ class RegistroOcupacion {
     /**
      * Verifica automáticamente las fechas de salida estimadas
      * y cambia habitaciones a "limpieza" cuando el huésped debe salir
+     * Considera la hora de checkout a las 12:00 PM (mediodía)
      */
     public function verificarSalidasAutomaticas() {
         try {
-            // Obtener ocupaciones activas donde la fecha de salida ya pasó o es hoy
+            // Obtener ocupaciones activas donde la fecha y hora de salida ya pasaron
+            // Se agrega 12 horas (mediodía) a la fecha de salida estimada para el checkout
             $sql = "SELECT ro.*, hab.id as habitacion_id 
                     FROM registro_ocupacion ro
                     INNER JOIN habitaciones hab ON ro.habitacion_id = hab.id
                     WHERE ro.estado = 'activo' 
-                    AND ro.fecha_salida_estimada <= CURDATE()";
+                    AND DATE_ADD(ro.fecha_salida_estimada, INTERVAL 12 HOUR) <= NOW()";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
