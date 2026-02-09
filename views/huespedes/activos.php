@@ -135,14 +135,26 @@ include __DIR__ . '/../../includes/header.php';
                                 <div class="text-sm text-gray-700"><?php echo htmlspecialchars($ocu['procedencia'] ?: 'N/A'); ?></div>
                                 <div class="text-xs text-gray-500">→ <?php echo htmlspecialchars($ocu['prox_destino'] ?: 'N/A'); ?></div>
                             </td>
-                            <td class="px-6 py-4 text-center">
-                                <button 
-                                    type="button" 
-                                    onclick="abrirModalCheckout(<?php echo $ocu['id']; ?>, '<?php echo htmlspecialchars($ocu['nombres_apellidos']); ?>', '<?php echo $ocu['nro_pieza']; ?>')"
-                                    class="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors duration-200"
-                                >
-                                    Check-out
-                                </button>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2 justify-center">
+                                    <a 
+                                        href="<?php echo BASE_PATH; ?>/views/huespedes/editar.php?id=<?php echo $ocu['id']; ?>"
+                                        class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-200 flex items-center gap-1 shadow-md hover:shadow-lg min-w-[110px] justify-center"
+                                        title="Editar datos del huésped"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Editar
+                                    </a>
+                                    <button 
+                                        type="button" 
+                                        onclick="abrirModalCheckout(<?php echo $ocu['id']; ?>, '<?php echo htmlspecialchars($ocu['nombres_apellidos']); ?>', '<?php echo $ocu['nro_pieza']; ?>')"
+                                        class="px-4 py-2 bg-red-700 text-white text-sm font-medium rounded-lg hover:bg-red-800 transition-all duration-200 shadow-md hover:shadow-lg min-w-[110px]"
+                                    >
+                                        Check-out
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

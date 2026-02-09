@@ -161,6 +161,7 @@ include __DIR__ . '/../../includes/header.php';
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 10px;
+    table-layout: fixed;
 }
 
 .parte-diario th,
@@ -169,6 +170,8 @@ include __DIR__ . '/../../includes/header.php';
     padding: 4px 6px;
     text-align: center;
     vertical-align: middle;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .parte-diario th {
@@ -179,7 +182,7 @@ include __DIR__ . '/../../includes/header.php';
 
 .parte-diario .header-row {
     background-color: #4472C4;
-    color: white;
+    color: #000000;
     font-weight: bold;
     text-align: center;
 }
@@ -229,6 +232,31 @@ include __DIR__ . '/../../includes/header.php';
     background-color: #FFFFFF !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+}
+
+/* Anchos fijos para cada columna de datos */
+.parte-diario .lista-personas td:nth-child(1) { width: 4%; min-width: 4%; max-width: 4%; }   /* N° */
+.parte-diario .lista-personas td:nth-child(2) { width: 20%; min-width: 20%; max-width: 20%; }  /* Nombres */
+.parte-diario .lista-personas td:nth-child(3) { width: 3%; min-width: 3%; max-width: 3%; }   /* Género */
+.parte-diario .lista-personas td:nth-child(4) { width: 3%; min-width: 3%; max-width: 3%; }   /* Edad */
+.parte-diario .lista-personas td:nth-child(5) { width: 3%; min-width: 3%; max-width: 3%; }   /* E.C. */
+.parte-diario .lista-personas td:nth-child(6) { width: 8%; min-width: 8%; max-width: 8%; }   /* Nacionalidad */
+.parte-diario .lista-personas td:nth-child(7) { width: 10%; min-width: 10%; max-width: 10%; }  /* CI/Pasaporte */
+.parte-diario .lista-personas td:nth-child(8) { width: 14%; min-width: 14%; max-width: 14%; }  /* Profesión */
+.parte-diario .lista-personas td:nth-child(9) { width: 9%; min-width: 9%; max-width: 9%; }   /* Objeto */
+.parte-diario .lista-personas td:nth-child(10) { width: 3%; min-width: 3%; max-width: 3%; }  /* N° Pieza */
+.parte-diario .lista-personas td:nth-child(11) { width: 8%; min-width: 8%; max-width: 8%; }  /* Procedencia */
+.parte-diario .lista-personas td:nth-child(12) { width: 8%; min-width: 8%; max-width: 8%; }  /* Prov. Destino */
+.parte-diario .lista-personas td:nth-child(13) { width: 4%; min-width: 4%; max-width: 4%; }  /* Vía */
+.parte-diario .lista-personas td:nth-child(14) { width: 3%; min-width: 3%; max-width: 3%; }  /* Días */
+
+/* Aplicar anchos también a las filas de encabezados de sección */
+.parte-diario .fecha-row td:nth-child(1),
+.parte-diario .ingresantes-header td:nth-child(1),
+.parte-diario .pernoctantes-header td:nth-child(1),
+.parte-diario .salientes-header td:nth-child(1),
+.parte-diario .sin-novedad td:nth-child(1) {
+    width: 100%;
 }
 
 .parte-diario td.left {
@@ -310,17 +338,17 @@ body:not(.dark *) .parte-diario {
     <!-- Encabezado -->
     <table>
         <tr>
-            <td colspan="3" style="text-align: left; font-weight: bold; border-right: none;">
+            <td colspan="3" style="text-align: left; font-weight: bold; padding: 8px;">
                 Establecimiento: HOTEL CECIL<br>
                 Dirección: Av. Ostria Gutierrez #106
             </td>
-            <td colspan="3" style="text-align: center; font-weight: bold;">
+            <td colspan="3" style="text-align: center; font-weight: bold; padding: 8px;">
                 Días: 1-<?php echo $ultimo_dia; ?>
             </td>
-            <td colspan="3" style="text-align: center; font-weight: bold;">
+            <td colspan="3" style="text-align: center; font-weight: bold; padding: 8px;">
                 MES: <?php echo $nombre_mes; ?>
             </td>
-            <td colspan="3" style="text-align: right; font-weight: bold; border-left: none;">
+            <td colspan="5" style="text-align: right; font-weight: bold; padding: 8px;">
                 Categoría: TRES ESTRELLAS<br>
                 Teléfonos: 64-24658<br>
                 Año: <?php echo $anio; ?>
@@ -330,26 +358,38 @@ body:not(.dark *) .parte-diario {
     
     <!-- Cabecera de columnas -->
     <table>
+        <colgroup>
+            <col style="width: 4%;">
+            <col style="width: 20%;">
+            <col style="width: 3%;">
+            <col style="width: 3%;">
+            <col style="width: 3%;">
+            <col style="width: 8%;">
+            <col style="width: 10%;">
+            <col style="width: 14%;">
+            <col style="width: 9%;">
+            <col style="width: 3%;">
+            <col style="width: 8%;">
+            <col style="width: 8%;">
+            <col style="width: 4%;">
+            <col style="width: 3%;">
+        </colgroup>
         <thead>
-            <tr style="background-color: #4472C4; color: white;">
-                <th rowspan="2" style="width: 3%;">N°</th>
-                <th rowspan="2" style="width: 15%;">Nombres y Apellidos</th>
-                <th rowspan="2" style="width: 4%;">Genero</th>
-                <th rowspan="2" style="width: 4%;">Edad</th>
-                <th rowspan="2" style="width: 5%;">Estado Civil</th>
-                <th rowspan="2" style="width: 8%;">Nacionalidad</th>
-                <th colspan="2" style="width: 12%;">C. de Identidad o Pasaporte</th>
-                <th rowspan="2" style="width: 10%;">Profesion</th>
-                <th rowspan="2" style="width: 8%;">Objeto</th>
-                <th rowspan="2" style="width: 5%;">N° Pieza</th>
-                <th rowspan="2" style="width: 8%;">Procedencia</th>
-                <th rowspan="2" style="width: 8%;">Prov. Destino</th>
-                <th rowspan="2" style="width: 5%;">Via de Ingreso</th>
-                <th rowspan="2" style="width: 5%;">N° Dias</th>
-            </tr>
-            <tr style="background-color: #4472C4; color: white;">
-                <th>Identidad</th>
-                <th>Pasaporte</th>
+            <tr style="background-color: #4472C4; color: #000000; font-weight: bold;">
+                <th style="width: 4%;">N°</th>
+                <th style="width: 20%;">Nombres y Apellidos</th>
+                <th style="width: 3%;">Genero</th>
+                <th style="width: 3%;">Edad</th>
+                <th style="width: 3%;">E.C.</th>
+                <th style="width: 8%;">Nacionalidad</th>
+                <th style="width: 10%;">C.I. / Pasaporte</th>
+                <th style="width: 14%;">Profesion</th>
+                <th style="width: 9%;">Objeto</th>
+                <th style="width: 3%;">N° Pieza</th>
+                <th style="width: 8%;">Procedencia</th>
+                <th style="width: 8%;">Prov. Destino</th>
+                <th style="width: 4%;">Via</th>
+                <th style="width: 3%;">Días</th>
             </tr>
         </thead>
     </table>
@@ -367,9 +407,25 @@ body:not(.dark *) .parte-diario {
     ?>
     
     <table>
+        <colgroup>
+            <col style="width: 4%;">
+            <col style="width: 20%;">
+            <col style="width: 3%;">
+            <col style="width: 3%;">
+            <col style="width: 3%;">
+            <col style="width: 8%;">
+            <col style="width: 10%;">
+            <col style="width: 14%;">
+            <col style="width: 9%;">
+            <col style="width: 3%;">
+            <col style="width: 8%;">
+            <col style="width: 8%;">
+            <col style="width: 4%;">
+            <col style="width: 3%;">
+        </colgroup>
         <!-- Fecha del día -->
         <tr class="fecha-row">
-            <td colspan="15" style="font-weight: bold; text-align: center; padding: 6px;">
+            <td colspan="14" style="font-weight: bold; text-align: center; padding: 6px;">
                 <?php echo $dia; ?> DE <?php echo $nombre_mes; ?>
             </td>
         </tr>
@@ -379,7 +435,7 @@ body:not(.dark *) .parte-diario {
             <!-- INGRESANTES -->
             <?php if ($tiene_ingresantes): ?>
             <tr class="ingresantes-header">
-                <td colspan="15" style="text-align: center; padding: 4px;">
+                <td colspan="14" style="text-align: center; padding: 4px;">
                     INGRESANTES
                 </td>
             </tr>
@@ -392,9 +448,8 @@ body:not(.dark *) .parte-diario {
                 <td class="small"><?php echo $ocu['estado_civil'] ? substr($ocu['estado_civil'], 0, 1) : 'S'; ?></td>
                 <td class="small"><?php echo strtoupper(substr($ocu['nacionalidad'], 0, 8)); ?></td>
                 <td class="small"><?php echo htmlspecialchars($ocu['ci_pasaporte']); ?></td>
-                <td></td>
-                <td class="small"><?php echo htmlspecialchars(substr($ocu['profesion'], 0, 12)); ?></td>
-                <td class="small"><?php echo htmlspecialchars(substr($ocu['objeto'], 0, 8)); ?></td>
+                <td class="small"><?php echo htmlspecialchars(substr($ocu['profesion'], 0, 14)); ?></td>
+                <td class="small"><?php echo htmlspecialchars(substr($ocu['objeto'], 0, 10)); ?></td>
                 <td><?php echo $ocu['nro_pieza']; ?></td>
                 <td class="small"><?php echo htmlspecialchars(substr($ocu['procedencia'], 0, 10)); ?></td>
                 <td class="small"><?php echo $ocu['prox_destino'] ? htmlspecialchars(substr($ocu['prox_destino'], 0, 10)) : 'Potosi'; ?></td>
@@ -407,7 +462,7 @@ body:not(.dark *) .parte-diario {
             <!-- PERNOCTANTES -->
             <?php if ($tiene_pernoctantes): ?>
             <tr class="pernoctantes-header">
-                <td colspan="15" style="text-align: center; padding: 4px;">
+                <td colspan="14" style="text-align: center; padding: 4px;">
                     PERNOCTANTES
                 </td>
             </tr>
@@ -420,9 +475,8 @@ body:not(.dark *) .parte-diario {
                 <td class="small"><?php echo $ocu['estado_civil'] ? substr($ocu['estado_civil'], 0, 1) : 'S'; ?></td>
                 <td class="small"><?php echo strtoupper(substr($ocu['nacionalidad'], 0, 8)); ?></td>
                 <td class="small"><?php echo htmlspecialchars($ocu['ci_pasaporte']); ?></td>
-                <td></td>
-                <td class="small"><?php echo htmlspecialchars(substr($ocu['profesion'], 0, 12)); ?></td>
-                <td class="small"><?php echo htmlspecialchars(substr($ocu['objeto'], 0, 8)); ?></td>
+                <td class="small"><?php echo htmlspecialchars(substr($ocu['profesion'], 0, 14)); ?></td>
+                <td class="small"><?php echo htmlspecialchars(substr($ocu['objeto'], 0, 10)); ?></td>
                 <td><?php echo $ocu['nro_pieza']; ?></td>
                 <td class="small"><?php echo htmlspecialchars(substr($ocu['procedencia'], 0, 10)); ?></td>
                 <td class="small"><?php echo $ocu['prox_destino'] ? htmlspecialchars(substr($ocu['prox_destino'], 0, 10)) : 'Potosi'; ?></td>
@@ -435,7 +489,7 @@ body:not(.dark *) .parte-diario {
             <!-- SALIENTES -->
             <?php if ($tiene_salientes): ?>
             <tr class="salientes-header">
-                <td colspan="15" style="text-align: center; padding: 4px;">
+                <td colspan="14" style="text-align: center; padding: 4px;">
                     SALIENTES
                 </td>
             </tr>
@@ -448,9 +502,8 @@ body:not(.dark *) .parte-diario {
                 <td class="small"><?php echo $ocu['estado_civil'] ? substr($ocu['estado_civil'], 0, 1) : 'S'; ?></td>
                 <td class="small"><?php echo strtoupper(substr($ocu['nacionalidad'], 0, 8)); ?></td>
                 <td class="small"><?php echo htmlspecialchars($ocu['ci_pasaporte']); ?></td>
-                <td></td>
-                <td class="small"><?php echo htmlspecialchars(substr($ocu['profesion'], 0, 12)); ?></td>
-                <td class="small"><?php echo htmlspecialchars(substr($ocu['objeto'], 0, 8)); ?></td>
+                <td class="small"><?php echo htmlspecialchars(substr($ocu['profesion'], 0, 14)); ?></td>
+                <td class="small"><?php echo htmlspecialchars(substr($ocu['objeto'], 0, 10)); ?></td>
                 <td><?php echo $ocu['nro_pieza']; ?></td>
                 <td class="small"><?php echo htmlspecialchars(substr($ocu['procedencia'], 0, 10)); ?></td>
                 <td class="small"><?php echo $ocu['prox_destino'] ? htmlspecialchars(substr($ocu['prox_destino'], 0, 10)) : 'Potosi'; ?></td>
@@ -463,7 +516,7 @@ body:not(.dark *) .parte-diario {
         <?php else: ?>
             <!-- SIN NOVEDAD -->
             <tr class="sin-novedad">
-                <td colspan="15" style="padding: 8px;">
+                <td colspan="14" style="padding: 8px;">
                     Sin novedad
                 </td>
             </tr>

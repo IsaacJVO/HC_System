@@ -106,6 +106,31 @@ class RegistroOcupacion {
         return $stmt->fetch();
     }
     
+    public function actualizar($id, $datos) {
+        try {
+            $sql = "UPDATE registro_ocupacion SET 
+                    nro_pieza = :nro_pieza,
+                    prox_destino = :prox_destino,
+                    via_ingreso = :via_ingreso,
+                    nro_dias = :nro_dias,
+                    fecha_salida_estimada = DATE_ADD(fecha_ingreso, INTERVAL :nro_dias_calc DAY)
+                    WHERE id = :id";
+            
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute([
+                ':id' => $id,
+                ':nro_pieza' => $datos['nro_pieza'],
+                ':prox_destino' => $datos['prox_destino'] ?? null,
+                ':via_ingreso' => $datos['via_ingreso'] ?? null,
+                ':nro_dias' => $datos['nro_dias'],
+                ':nro_dias_calc' => $datos['nro_dias']
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error en RegistroOcupacion::actualizar: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
     private function actualizarEstadoHabitacion($habitacion_id, $estado) {
         $sql = "UPDATE habitaciones SET estado = :estado WHERE id = :id";
         $stmt = $this->conn->prepare($sql);

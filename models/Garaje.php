@@ -9,13 +9,15 @@ class Garaje {
     public function registrar($datos) {
         try {
             $conn = getConnection();
-            $sql = "INSERT INTO registro_garaje (ocupacion_id, huesped_nombre, fecha, costo, observaciones) 
-                    VALUES (:ocupacion_id, :huesped_nombre, :fecha, :costo, :observaciones)";
+            $sql = "INSERT INTO registro_garaje (ocupacion_id, huesped_nombre, placa, tipo_vehiculo, fecha, costo, observaciones) 
+                    VALUES (:ocupacion_id, :huesped_nombre, :placa, :tipo_vehiculo, :fecha, :costo, :observaciones)";
             
             $stmt = $conn->prepare($sql);
             $result = $stmt->execute([
                 ':ocupacion_id' => $datos['ocupacion_id'],
                 ':huesped_nombre' => $datos['huesped_nombre'],
+                ':placa' => $datos['placa'] ?? null,
+                ':tipo_vehiculo' => $datos['tipo_vehiculo'] ?? null,
                 ':fecha' => $datos['fecha'],
                 ':costo' => $datos['costo'] ?? 10.00,
                 ':observaciones' => $datos['observaciones'] ?? null

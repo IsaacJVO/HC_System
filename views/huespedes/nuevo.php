@@ -151,6 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos_garaje = [
                 'ocupacion_id' => $ocupacion_id,
                 'huesped_nombre' => $_POST['nombres_apellidos'],
+                'placa' => isset($_POST['garaje_placa']) ? strtoupper(clean_input($_POST['garaje_placa'])) : null,
+                'tipo_vehiculo' => isset($_POST['garaje_tipo_vehiculo']) ? clean_input($_POST['garaje_tipo_vehiculo']) : null,
                 'fecha' => $fecha_ingreso,
                 'costo' => 10.00,
                 'observaciones' => 'Habitación ' . $_POST['nro_pieza']
@@ -280,18 +282,27 @@ include __DIR__ . '/../../includes/header.php';
 <form method="POST" action="" class="space-y-8">
     
     <!-- Sección: Información Personal -->
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-            <h2 class="text-xl font-semibold text-noir">Información Personal</h2>
-            <p class="text-sm text-gray-500 mt-1">Datos de identificación del huésped</p>
+    <div class="bg-white rounded-2xl border-2 border-gray-300 shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+        <div class="px-8 py-6 border-b-2 border-gray-300 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Información Personal</h2>
+                    <p class="text-sm text-gray-600 mt-0.5">Datos de identificación del huésped</p>
+                </div>
+            </div>
         </div>
         
-        <div class="p-8 space-y-6">
+        <div class="p-8 space-y-6 bg-gray-50">
             <!-- Fila 1: CI y Nombres -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-noir">
-                        CI o Pasaporte <span class="text-red-500">*</span>
+                    <label class="block text-sm font-bold text-gray-800 mb-2">
+                        CI o Pasaporte <span class="text-red-600 text-base">*</span>
                     </label>
                     <div class="relative">
                         <input 
@@ -301,7 +312,7 @@ include __DIR__ . '/../../includes/header.php';
                             onblur="buscarHuespedPorCI()"
                             value="<?php echo isset($_POST['ci_pasaporte']) ? htmlspecialchars($_POST['ci_pasaporte']) : ''; ?>"
                             required
-                            class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
+                            class="w-full px-4 py-4 border-2 border-gray-400 rounded-xl focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 text-gray-900 font-medium placeholder-gray-400 hover:border-gray-500 shadow-sm"
                             placeholder="Ingrese CI o Pasaporte"
                         >
                         <!-- Indicador de búsqueda -->
@@ -315,8 +326,8 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
                 
                 <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-noir">
-                        Nombres y Apellidos <span class="text-red-500">*</span>
+                    <label class="block text-sm font-bold text-gray-800 mb-2">
+                        Nombres y Apellidos <span class="text-red-600 text-base">*</span>
                     </label>
                     <input 
                         type="text" 
@@ -324,7 +335,7 @@ include __DIR__ . '/../../includes/header.php';
                         name="nombres_apellidos" 
                         value="<?php echo isset($_POST['nombres_apellidos']) ? htmlspecialchars($_POST['nombres_apellidos']) : ''; ?>"
                         required
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
+                        class="w-full px-4 py-4 border-2 border-gray-400 rounded-xl focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 text-gray-900 font-medium placeholder-gray-400 hover:border-gray-500 shadow-sm"
                         placeholder="Nombre completo del huésped"
                     >
                 </div>
@@ -383,15 +394,17 @@ include __DIR__ . '/../../includes/header.php';
                 
                 <div class="space-y-2">
                     <label class="block text-sm font-semibold text-noir">Estado Civil</label>
-                    <input 
-                        type="text" 
+                    <select 
                         id="estado_civil"
                         name="estado_civil"
-                        value="<?php echo isset($_POST['estado_civil']) ? htmlspecialchars($_POST['estado_civil']) : ''; ?>"
-                        maxlength="1"
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
-                        placeholder="S, C, D, V"
+                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir appearance-none bg-white"
                     >
+                        <option value="">Seleccione</option>
+                        <option value="S" <?php echo (isset($_POST['estado_civil']) && $_POST['estado_civil'] == 'S') ? 'selected' : ''; ?>>S</option>
+                        <option value="C" <?php echo (isset($_POST['estado_civil']) && $_POST['estado_civil'] == 'C') ? 'selected' : ''; ?>>C</option>
+                        <option value="D" <?php echo (isset($_POST['estado_civil']) && $_POST['estado_civil'] == 'D') ? 'selected' : ''; ?>>D</option>
+                        <option value="V" <?php echo (isset($_POST['estado_civil']) && $_POST['estado_civil'] == 'V') ? 'selected' : ''; ?>>V</option>
+                    </select>
                 </div>
                 
                 <div class="space-y-2">
@@ -425,26 +438,50 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
                 
                 <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-noir">Motivo de Estadía</label>
-                    <input 
-                        type="text" 
+                    <label class="block text-sm font-semibold text-noir">Objeto del Viaje</label>
+                    <select 
                         id="objeto"
                         name="objeto"
-                        value="<?php echo isset($_POST['objeto']) ? htmlspecialchars($_POST['objeto']) : ''; ?>"
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
-                        placeholder="Turismo, Negocios, Paso..."
+                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir appearance-none bg-white"
                     >
+                        <option value="">Seleccione</option>
+                        <option value="Turismo" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Turismo') ? 'selected' : ''; ?>>Turismo</option>
+                        <option value="Negocios" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Negocios') ? 'selected' : ''; ?>>Negocios</option>
+                        <option value="Salud" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Salud') ? 'selected' : ''; ?>>Salud</option>
+                        <option value="Educación" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Educación') ? 'selected' : ''; ?>>Educación</option>
+                        <option value="Familiar" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Familiar') ? 'selected' : ''; ?>>Familiar</option>
+                        <option value="Tránsito" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Tránsito') ? 'selected' : ''; ?>>Tránsito</option>
+                        <option value="Paso" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Paso') ? 'selected' : ''; ?>>Paso</option>
+                        <option value="Otro" <?php echo (isset($_POST['objeto']) && $_POST['objeto'] == 'Otro') ? 'selected' : ''; ?>>Otro</option>
+                    </select>
                 </div>
                 
                 <div class="space-y-2">
                     <label class="block text-sm font-semibold text-noir">Procedencia</label>
+                    <select 
+                        id="procedencia_select"
+                        onchange="toggleProcedenciaCustom()"
+                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir appearance-none bg-white"
+                    >
+                        <option value="">Seleccione departamento</option>
+                        <option value="La Paz">La Paz</option>
+                        <option value="Santa Cruz">Santa Cruz</option>
+                        <option value="Cochabamba">Cochabamba</option>
+                        <option value="Oruro">Oruro</option>
+                        <option value="Potosí">Potosí</option>
+                        <option value="Chuquisaca">Chuquisaca</option>
+                        <option value="Tarija">Tarija</option>
+                        <option value="Beni">Beni</option>
+                        <option value="Pando">Pando</option>
+                        <option value="otro">Otro país...</option>
+                    </select>
                     <input 
                         type="text" 
                         id="procedencia"
                         name="procedencia"
                         value="<?php echo isset($_POST['procedencia']) ? htmlspecialchars($_POST['procedencia']) : ''; ?>"
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
-                        placeholder="Ciudad de origen"
+                        class="hidden w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
+                        placeholder="Escriba el país de origen"
                     >
                 </div>
             </div>
@@ -452,26 +489,33 @@ include __DIR__ . '/../../includes/header.php';
     </div>
     
     <!-- Sección: Acompañantes (Huéspedes Adicionales) -->
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden" id="seccion_acompanantes">
-        <div class="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-white">
+    <div class="bg-white rounded-2xl border-2 border-purple-300 shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300" id="seccion_acompanantes">
+        <div class="px-8 py-6 border-b-2 border-purple-300 bg-gradient-to-r from-purple-50 to-pink-50">
             <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-xl font-semibold text-noir">Acompañantes</h2>
-                    <p class="text-sm text-gray-500 mt-1">Para habitaciones compartidas (dobles, triples, matrimoniales)</p>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900">Acompañantes</h2>
+                        <p class="text-sm text-gray-600 mt-0.5">Para habitaciones compartidas (dobles, triples, matrimoniales)</p>
+                    </div>
                 </div>
                 <button 
                     type="button" 
                     id="btn_agregar_acompanante"
                     onclick="agregarAcompanante()" 
                     disabled
-                    class="px-4 py-2 bg-gray-400 text-white rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200"
+                    class="px-5 py-3 bg-gray-400 text-white rounded-xl text-sm font-bold cursor-not-allowed transition-all duration-200 shadow-md"
                 >
                     + Agregar Acompañante
                 </button>
             </div>
         </div>
         
-        <div class="p-8" id="lista_acompanantes">
+        <div class="p-8 bg-purple-50/30" id="lista_acompanantes">
             <div class="text-center text-gray-400 py-6" id="mensaje_sin_acompanantes">
                 <svg class="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -483,25 +527,34 @@ include __DIR__ . '/../../includes/header.php';
     </div>
     
     <!-- Sección: Detalles de Reserva -->
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-            <h2 class="text-xl font-semibold text-noir">Detalles de Reserva</h2>
-            <p class="text-sm text-gray-500 mt-1">Asignación de habitación y fechas de estadía</p>
+    <div class="bg-white rounded-2xl border-2 border-green-300 shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+        <div class="px-8 py-6 border-b-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Detalles de Reserva</h2>
+                    <p class="text-sm text-gray-600 mt-0.5">Asignación de habitación y fechas de estadía</p>
+                </div>
+            </div>
         </div>
         
-        <div class="p-8 space-y-6">
+        <div class="p-8 space-y-6 bg-green-50/30">
             <!-- Fila 1: Habitación y Destino -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-noir">
-                        Habitación <span class="text-red-500">*</span>
+                    <label class="block text-sm font-bold text-gray-800 mb-2">
+                        Habitación <span class="text-red-600 text-base">*</span>
                     </label>
                     <select 
                         name="nro_pieza" 
                         id="nro_pieza"
                         onchange="actualizarCapacidadHabitacion(); calcularFechaSalida();"
                         required
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir appearance-none bg-white"
+                        class="w-full px-4 py-4 border-2 border-gray-400 rounded-xl focus:ring-4 focus:ring-green-300 focus:border-green-500 transition-all duration-200 text-gray-900 font-medium appearance-none bg-white hover:border-gray-500 shadow-sm"
                     >
                         <option value="">Seleccione una habitación</option>
                         <?php foreach ($habitaciones as $hab): ?>
@@ -528,13 +581,31 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
                 
                 <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-noir">Próximo Destino</label>
+                    <label class="block text-sm font-bold text-gray-800 mb-2">Próximo Destino</label>
+                    <select 
+                        id="prox_destino_select"
+                        onchange="toggleProxDestinoCustom()"
+                        class="w-full px-4 py-4 border-2 border-gray-400 rounded-xl focus:ring-4 focus:ring-green-300 focus:border-green-500 transition-all duration-200 text-gray-900 font-medium appearance-none bg-white hover:border-gray-500 shadow-sm"
+                    >
+                        <option value="">Seleccione departamento</option>
+                        <option value="La Paz">La Paz</option>
+                        <option value="Santa Cruz">Santa Cruz</option>
+                        <option value="Cochabamba">Cochabamba</option>
+                        <option value="Oruro">Oruro</option>
+                        <option value="Potosí">Potosí</option>
+                        <option value="Chuquisaca">Chuquisaca</option>
+                        <option value="Tarija">Tarija</option>
+                        <option value="Beni">Beni</option>
+                        <option value="Pando">Pando</option>
+                        <option value="otro">Otro lugar...</option>
+                    </select>
                     <input 
                         type="text" 
+                        id="prox_destino"
                         name="prox_destino"
                         value="<?php echo isset($_POST['prox_destino']) ? htmlspecialchars($_POST['prox_destino']) : ''; ?>"
-                        class="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-noir focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
-                        placeholder="Ciudad o país de destino"
+                        class="hidden w-full px-4 py-4 border-2 border-gray-400 rounded-xl focus:ring-4 focus:ring-green-300 focus:border-green-500 transition-all duration-200 text-gray-900 font-medium placeholder-gray-400 hover:border-gray-500 shadow-sm mt-2"
+                        placeholder="Escriba la ciudad o país de destino"
                     >
                 </div>
             </div>
@@ -649,21 +720,62 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
             </div>
             
-            <!-- Garaje (Opcional - Discreto) -->
-            <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                <label class="flex items-center gap-3 cursor-pointer">
+            <!-- Garaje (Opcional - Mejorado) -->
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-5 border-2 border-gray-300">
+                <div class="flex items-start gap-3">
                     <input 
                         type="checkbox" 
                         id="usa_garaje"
                         name="usa_garaje" 
                         value="1"
-                        class="w-4 h-4 text-gray-900 bg-gray-100 border-gray-300 rounded focus:ring-gray-500 dark:focus:ring-gray-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        onchange="toggleGarajeDetalles()"
+                        class="w-5 h-5 mt-0.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     >
                     <div class="flex-1">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Usa garaje</span>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Se registrará para control y pago posterior</p>
+                        <label for="usa_garaje" class="text-base font-bold text-gray-800 cursor-pointer flex items-center gap-2">
+                            <i class="fas fa-car text-blue-600"></i>
+                            Usa garaje
+                        </label>
+                        <p class="text-xs text-gray-600 mt-1">Registrar vehículo del huésped (Bs. 10.00/día)</p>
                     </div>
-                </label>
+                </div>
+                
+                <!-- Detalles del vehículo (se muestran al marcar el checkbox) -->
+                <div id="garaje_detalles" style="display: none;" class="mt-4 pt-4 border-t-2 border-gray-300">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-800 mb-2">
+                                Número de Placa <span class="text-red-600">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="garaje_placa"
+                                name="garaje_placa"
+                                placeholder="Ej: 1234 ABC"
+                                class="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:ring-3 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 text-gray-900 font-medium uppercase hover:border-gray-500 shadow-sm"
+                            >
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold text-gray-800 mb-2">
+                                Tipo de Vehículo <span class="text-red-600">*</span>
+                            </label>
+                            <select 
+                                id="garaje_tipo_vehiculo"
+                                name="garaje_tipo_vehiculo"
+                                class="w-full px-4 py-3 border-2 border-gray-400 rounded-lg focus:ring-3 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 text-gray-900 font-medium appearance-none bg-white hover:border-gray-500 shadow-sm"
+                            >
+                                <option value="">Seleccione</option>
+                                <option value="Automóvil">Automóvil</option>
+                                <option value="Camioneta">Camioneta</option>
+                                <option value="Vagoneta">Vagoneta</option>
+                                <option value="Minibús">Minibús</option>
+                                <option value="Motocicleta">Motocicleta</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Fecha Salida Estimada y Precio Total -->
@@ -831,17 +943,17 @@ function actualizarBotonAcompanante() {
     if (capacidadHabitacion === 0) {
         // No hay habitación seleccionada
         btn.disabled = true;
-        btn.className = 'px-4 py-2 bg-gray-400 text-white rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200';
+        btn.className = 'px-5 py-3 bg-gray-400 text-white rounded-xl text-sm font-bold cursor-not-allowed transition-all duration-200 shadow-md';
         btn.innerHTML = '+ Agregar Acompañante';
     } else if (totalPersonas >= capacidadHabitacion) {
         // Capacidad alcanzada
         btn.disabled = true;
-        btn.className = 'px-4 py-2 bg-gray-400 text-white rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200';
+        btn.className = 'px-5 py-3 bg-red-400 text-white rounded-xl text-sm font-bold cursor-not-allowed transition-all duration-200 shadow-md';
         btn.innerHTML = `Capacidad completa (${totalPersonas}/${capacidadHabitacion})`;
     } else {
         // Puede agregar más acompañantes
         btn.disabled = false;
-        btn.className = 'px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-all duration-200';
+        btn.className = 'px-5 py-3 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 hover:shadow-lg active:transform active:scale-95 transition-all duration-200 shadow-md';
         btn.innerHTML = `+ Agregar Acompañante (${totalPersonas}/${capacidadHabitacion})`;
     }
 }
@@ -880,13 +992,16 @@ function agregarAcompanante() {
     }
     
     const acompananteHTML = `
-        <div class="border border-gray-300 rounded-xl p-6 mb-4 bg-purple-50/30" id="acompanante_${contadorAcompanantes}">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-semibold text-noir">Acompañante #${contadorAcompanantes}</h3>
+        <div class="border-2 border-purple-300 rounded-xl p-6 mb-4 bg-white shadow-md hover:shadow-lg transition-shadow duration-200" id="acompanante_${contadorAcompanantes}">
+            <div class="flex items-center justify-between mb-5 pb-4 border-b-2 border-purple-200">
+                <h3 class="text-lg font-bold text-purple-900 flex items-center gap-2">
+                    <span class="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm">${contadorAcompanantes}</span>
+                    Acompañante #${contadorAcompanantes}
+                </h3>
                 <button 
                     type="button" 
                     onclick="eliminarAcompanante(${contadorAcompanantes})"
-                    class="text-red-600 hover:text-red-800 text-sm font-medium"
+                    class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                     ✕ Eliminar
                 </button>
@@ -894,42 +1009,53 @@ function agregarAcompanante() {
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-noir mb-1">CI/Pasaporte <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-bold text-gray-800 mb-2">CI/Pasaporte <span class="text-red-600">*</span></label>
                     <input 
                         type="text" 
                         name="acomp_ci[]" 
                         id="acomp_ci_${contadorAcompanantes}"
                         onblur="buscarAcompanantePorCI(${contadorAcompanantes})"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        class="w-full px-3 py-3 border-2 border-gray-400 rounded-lg text-sm focus:ring-3 focus:ring-purple-300 focus:border-purple-500 hover:border-gray-500 shadow-sm font-medium"
                         placeholder="Número de documento"
                     >
                 </div>
                 
                 <div>
-                    <label class="block text-xs font-semibold text-noir mb-1">Nombres y Apellidos <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-bold text-gray-800 mb-2">Nombres y Apellidos <span class="text-red-600">*</span></label>
                     <input 
                         type="text" 
                         name="acomp_nombres[]" 
                         id="acomp_nombres_${contadorAcompanantes}"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        class="w-full px-3 py-3 border-2 border-gray-400 rounded-lg text-sm focus:ring-3 focus:ring-purple-300 focus:border-purple-500 hover:border-gray-500 shadow-sm font-medium"
                         placeholder="Nombre completo"
                     >
                 </div>
                 
                 <div>
-                    <label class="block text-xs font-semibold text-noir mb-1">Género <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-bold text-gray-800 mb-2">Género <span class="text-red-600">*</span></label>
                     <select 
                         name="acomp_genero[]" 
                         id="acomp_genero_${contadorAcompanantes}"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                        class="w-full px-3 py-3 border-2 border-gray-400 rounded-lg text-sm focus:ring-3 focus:ring-purple-300 focus:border-purple-500 bg-white hover:border-gray-500 shadow-sm font-medium"
                     >
                         <option value="">Seleccione</option>
                         <option value="M">Masculino</option>
                         <option value="F">Femenino</option>
                     </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-noir mb-1">Fecha de Nacimiento <span class="text-red-500">*</span></label>
+                    <input 
+                        type="date" 
+                        id="acomp_fecha_nacimiento_${contadorAcompanantes}"
+                        onchange="calcularEdadAcompanante(${contadorAcompanantes})"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                    >
                 </div>
                 
                 <div>
@@ -939,10 +1065,11 @@ function agregarAcompanante() {
                         name="acomp_edad[]" 
                         id="acomp_edad_${contadorAcompanantes}"
                         required
+                        readonly
                         min="1"
                         max="120"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                        placeholder="Edad"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 cursor-not-allowed font-semibold"
+                        placeholder="Se calcula automáticamente"
                     >
                 </div>
                 
@@ -955,11 +1082,10 @@ function agregarAcompanante() {
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
                     >
                         <option value="">Seleccione</option>
-                        <option value="Soltero/a">Soltero/a</option>
-                        <option value="Casado/a">Casado/a</option>
-                        <option value="Divorciado/a">Divorciado/a</option>
-                        <option value="Viudo/a">Viudo/a</option>
-                        <option value="Unión libre">Unión libre</option>
+                        <option value="S">S</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="V">V</option>
                     </select>
                 </div>
                 
@@ -989,12 +1115,12 @@ function agregarAcompanante() {
                 </div>
                 
                 <div>
-                    <label class="block text-xs font-semibold text-noir mb-1">Objeto del Viaje <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-bold text-gray-800 mb-2">Objeto del Viaje <span class="text-red-600">*</span></label>
                     <select 
                         name="acomp_objeto[]" 
                         id="acomp_objeto_${contadorAcompanantes}"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                        class="w-full px-3 py-3 border-2 border-gray-400 rounded-lg text-sm focus:ring-3 focus:ring-purple-300 focus:border-purple-500 bg-white hover:border-gray-500 shadow-sm font-medium"
                     >
                         <option value="">Seleccione</option>
                         <option value="Turismo">Turismo</option>
@@ -1003,20 +1129,40 @@ function agregarAcompanante() {
                         <option value="Educación">Educación</option>
                         <option value="Familiar">Familiar</option>
                         <option value="Tránsito">Tránsito</option>
+                        <option value="Paso">Paso</option>
                         <option value="Otro">Otro</option>
                     </select>
                 </div>
                 
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-noir mb-1">Procedencia <span class="text-red-500">*</span></label>
-                    <input 
-                        type="text" 
-                        name="acomp_procedencia[]" 
-                        id="acomp_procedencia_${contadorAcompanantes}"
-                        required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                        placeholder="Ciudad de origen"
-                    >
+                    <label class="block text-xs font-bold text-gray-800 mb-2">Procedencia <span class="text-red-600">*</span></label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <select 
+                            id="acomp_procedencia_select_${contadorAcompanantes}"
+                            onchange="toggleProcedenciaCustomAcomp(${contadorAcompanantes})"
+                            class="w-full px-3 py-3 border-2 border-gray-400 rounded-lg text-sm focus:ring-3 focus:ring-purple-300 focus:border-purple-500 bg-white hover:border-gray-500 shadow-sm font-medium"
+                        >
+                            <option value="">Seleccione departamento</option>
+                            <option value="La Paz">La Paz</option>
+                            <option value="Santa Cruz">Santa Cruz</option>
+                            <option value="Cochabamba">Cochabamba</option>
+                            <option value="Oruro">Oruro</option>
+                            <option value="Potosí">Potosí</option>
+                            <option value="Chuquisaca">Chuquisaca</option>
+                            <option value="Tarija">Tarija</option>
+                            <option value="Beni">Beni</option>
+                            <option value="Pando">Pando</option>
+                            <option value="otro">Otro lugar...</option>
+                        </select>
+                        <input 
+                            type="text" 
+                            name="acomp_procedencia[]" 
+                            id="acomp_procedencia_${contadorAcompanantes}"
+                            required
+                            class="hidden w-full px-3 py-3 border-2 border-gray-400 rounded-lg text-sm focus:ring-3 focus:ring-purple-300 focus:border-purple-500 hover:border-gray-500 shadow-sm font-medium"
+                            placeholder="Escriba el lugar de origen"
+                        >
+                    </div>
                 </div>
             </div>
         </div>
@@ -1028,7 +1174,7 @@ function agregarAcompanante() {
     actualizarBotonAcompanante();
 }
 
-// Función para calcular edad automáticamente
+// Función para calcular edad automáticamente del titular
 function calcularEdad() {
     const fechaNacimiento = document.getElementById('fecha_nacimiento').value;
     
@@ -1049,6 +1195,91 @@ function calcularEdad() {
     }
     
     document.getElementById('edad').value = edad;
+}
+
+// Función para calcular edad de acompañante
+function calcularEdadAcompanante(id) {
+    const fechaNacimiento = document.getElementById('acomp_fecha_nacimiento_' + id).value;
+    
+    if (!fechaNacimiento) {
+        document.getElementById('acomp_edad_' + id).value = '';
+        return;
+    }
+    
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNacimiento);
+    
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+        edad--;
+    }
+    
+    document.getElementById('acomp_edad_' + id).value = edad;
+}
+
+// Función para toggle del campo de procedencia personalizada (titular)
+function toggleProcedenciaCustom() {
+    const select = document.getElementById('procedencia_select');
+    const input = document.getElementById('procedencia');
+    
+    if (select.value === 'otro') {
+        input.classList.remove('hidden');
+        input.required = true;
+        input.value = '';
+        input.focus();
+    } else if (select.value) {
+        input.classList.add('hidden');
+        input.required = false;
+        input.value = select.value;
+    } else {
+        input.classList.add('hidden');
+        input.required = false;
+        input.value = '';
+    }
+}
+
+// Función para toggle del campo de próximo destino personalizado
+function toggleProxDestinoCustom() {
+    const select = document.getElementById('prox_destino_select');
+    const input = document.getElementById('prox_destino');
+    
+    if (select.value === 'otro') {
+        input.classList.remove('hidden');
+        input.required = false;
+        input.value = '';
+        input.focus();
+    } else if (select.value) {
+        input.classList.add('hidden');
+        input.required = false;
+        input.value = select.value;
+    } else {
+        input.classList.add('hidden');
+        input.required = false;
+        input.value = '';
+    }
+}
+
+// Función para toggle del campo de procedencia personalizada (acompañante)
+function toggleProcedenciaCustomAcomp(id) {
+    const select = document.getElementById('acomp_procedencia_select_' + id);
+    const input = document.getElementById('acomp_procedencia_' + id);
+    
+    if (select.value === 'otro') {
+        input.classList.remove('hidden');
+        input.required = true;
+        input.value = '';
+        input.focus();
+    } else if (select.value) {
+        input.classList.add('hidden');
+        input.required = true;
+        input.value = select.value;
+    } else {
+        input.classList.add('hidden');
+        input.required = true;
+        input.value = '';
+    }
 }
 
 // Función existente para buscar huésped
@@ -1085,15 +1316,40 @@ function buscarAcompanantePorCI(id) {
         .then(response => response.json())
         .then(data => {
             if (data.success && data.huesped) {
+                const h = data.huesped;
+                
                 // Autocompletar datos del acompañante
-                document.getElementById('acomp_nombres_' + id).value = data.huesped.nombres_apellidos || '';
-                document.getElementById('acomp_genero_' + id).value = data.huesped.genero || '';
-                document.getElementById('acomp_edad_' + id).value = data.huesped.edad || '';
-                document.getElementById('acomp_estado_civil_' + id).value = data.huesped.estado_civil || '';
-                document.getElementById('acomp_nacionalidad_' + id).value = data.huesped.nacionalidad || '';
-                document.getElementById('acomp_profesion_' + id).value = data.huesped.profesion || '';
-                document.getElementById('acomp_objeto_' + id).value = data.huesped.objeto || '';
-                document.getElementById('acomp_procedencia_' + id).value = data.huesped.procedencia || '';
+                document.getElementById('acomp_nombres_' + id).value = h.nombres_apellidos || '';
+                document.getElementById('acomp_genero_' + id).value = h.genero || '';
+                document.getElementById('acomp_estado_civil_' + id).value = h.estado_civil || '';
+                document.getElementById('acomp_nacionalidad_' + id).value = h.nacionalidad || '';
+                document.getElementById('acomp_profesion_' + id).value = h.profesion || '';
+                document.getElementById('acomp_objeto_' + id).value = h.objeto || '';
+                
+                // Fecha de nacimiento y edad
+                if (h.fecha_nacimiento) {
+                    document.getElementById('acomp_fecha_nacimiento_' + id).value = h.fecha_nacimiento;
+                    calcularEdadAcompanante(id);
+                } else if (h.edad) {
+                    document.getElementById('acomp_edad_' + id).value = h.edad;
+                }
+                
+                // Procedencia inteligente
+                if (h.procedencia) {
+                    const deptos = ['La Paz', 'Santa Cruz', 'Cochabamba', 'Oruro', 'Potosí', 'Chuquisaca', 'Tarija', 'Beni', 'Pando'];
+                    const selectProc = document.getElementById('acomp_procedencia_select_' + id);
+                    const inputProc = document.getElementById('acomp_procedencia_' + id);
+                    
+                    if (deptos.includes(h.procedencia)) {
+                        selectProc.value = h.procedencia;
+                        inputProc.value = h.procedencia;
+                        inputProc.classList.add('hidden');
+                    } else {
+                        selectProc.value = 'otro';
+                        inputProc.value = h.procedencia;
+                        inputProc.classList.remove('hidden');
+                    }
+                }
                 
                 // Mostrar mensaje de éxito
                 const acompananteDiv = document.getElementById('acompanante_' + id);
@@ -1229,6 +1485,26 @@ function cambiarMetodoPago(metodo) {
     }
 }
 
+// Función para mostrar/ocultar detalles del garaje
+function toggleGarajeDetalles() {
+    const checkbox = document.getElementById('usa_garaje');
+    const detalles = document.getElementById('garaje_detalles');
+    const placaInput = document.getElementById('garaje_placa');
+    const tipoInput = document.getElementById('garaje_tipo_vehiculo');
+    
+    if (checkbox.checked) {
+        detalles.style.display = 'block';
+        placaInput.required = true;
+        tipoInput.required = true;
+    } else {
+        detalles.style.display = 'none';
+        placaInput.required = false;
+        tipoInput.required = false;
+        placaInput.value = '';
+        tipoInput.value = '';
+    }
+}
+
 // Función para buscar huésped por CI
 function buscarHuespedPorCI() {
     const ci = document.getElementById('ci_pasaporte').value.trim();
@@ -1264,7 +1540,23 @@ function buscarHuespedPorCI() {
                 document.getElementById('nacionalidad').value = d.nacionalidad || '';
                 document.getElementById('profesion').value = d.profesion || '';
                 document.getElementById('objeto').value = d.objeto || '';
-                document.getElementById('procedencia').value = d.procedencia || '';
+                
+                // Procedencia inteligente
+                if (d.procedencia) {
+                    const deptos = ['La Paz', 'Santa Cruz', 'Cochabamba', 'Oruro', 'Potosí', 'Chuquisaca', 'Tarija', 'Beni', 'Pando'];
+                    const selectProc = document.getElementById('procedencia_select');
+                    const inputProc = document.getElementById('procedencia');
+                    
+                    if (deptos.includes(d.procedencia)) {
+                        selectProc.value = d.procedencia;
+                        inputProc.value = d.procedencia;
+                        inputProc.classList.add('hidden');
+                    } else {
+                        selectProc.value = 'otro';
+                        inputProc.value = d.procedencia;
+                        inputProc.classList.remove('hidden');
+                    }
+                }
                 
                 // Fecha de nacimiento y edad
                 if (d.fecha_nacimiento) {
