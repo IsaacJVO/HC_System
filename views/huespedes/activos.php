@@ -22,145 +22,115 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <!-- Page Header -->
-<div class="mb-8">
+<div class="mb-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-4xl font-bold text-noir mb-2">Huéspedes Activos</h1>
-            <p class="text-gray-500">Estadías actuales en el hotel</p>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Huéspedes Activos</h1>
         </div>
-        <a href="<?php echo BASE_PATH; ?>/views/huespedes/nuevo.php" class="px-6 py-3 bg-noir text-white rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 shadow-lg">
-            + Nuevo Registro
+        <a href="<?php echo BASE_PATH; ?>/views/huespedes/nuevo.php" 
+           class="px-4 py-2 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded transition-colors">
+            Nuevo Registro
         </a>
     </div>
 </div>
 
 <!-- Success Message -->
 <?php if (isset($_GET['msg']) && $_GET['msg'] == 'finalizado'): ?>
-    <div class="mb-6 bg-green-50 border border-green-200 rounded-xl p-4">
-        <div class="flex items-start">
-            <svg class="w-5 h-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-            </svg>
-            <div class="ml-3">
-                <p class="text-sm font-medium text-green-800">Ocupación finalizada correctamente</p>
-            </div>
-        </div>
+    <div class="mb-4 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-sm text-green-800 dark:text-green-200">
+        Ocupación finalizada correctamente
     </div>
 <?php endif; ?>
 
 <!-- Content -->
 <?php if (empty($ocupaciones)): ?>
-    <div class="bg-white rounded-2xl border border-gray-200 p-16 text-center">
-        <div class="w-24 h-24 bg-mist rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-            </svg>
-        </div>
-        <h3 class="text-xl font-semibold text-noir mb-2">Sin huéspedes activos</h3>
-        <p class="text-gray-500 mb-6">No hay estadías registradas en este momento</p>
-        <a href="<?php echo BASE_PATH; ?>/views/huespedes/nuevo.php" class="inline-flex items-center px-6 py-3 bg-noir text-white rounded-xl font-medium hover:bg-gray-800 transition-all duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Registrar Primer Huésped
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
+        <p class="text-gray-500 dark:text-gray-400 mb-4">No hay huéspedes activos</p>
+        <a href="<?php echo BASE_PATH; ?>/views/huespedes/nuevo.php" 
+           class="inline-block px-4 py-2 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded transition-colors">
+            Registrar Huésped
         </a>
     </div>
 <?php else: ?>
     <!-- Stats Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 mb-1">Total Activos</p>
-                    <p class="text-3xl font-bold text-noir"><?php echo count($ocupaciones); ?></p>
-                </div>
-                <div class="w-12 h-12 bg-noir rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                </div>
-            </div>
+    <div class="flex items-center gap-6 mb-4 text-sm text-gray-600 dark:text-gray-400">
+        <div>
+            <span class="font-medium text-gray-900 dark:text-white"><?php echo count($ocupaciones); ?></span> activos
+        </div>
+        <div class="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+        <div>
+            <span class="font-medium text-gray-900 dark:text-white"><?php echo count(array_unique(array_column($ocupaciones, 'nro_pieza'))); ?></span> habitaciones
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-mist border-b border-gray-200">
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Huésped</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Documento</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Info</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Habitación</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estadía</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Procedencia</th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <?php foreach ($ocupaciones as $idx => $ocu): ?>
-                        <tr class="hover:bg-mist transition-colors duration-150">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 rounded-full bg-noir flex items-center justify-center text-white font-semibold mr-3">
-                                        <?php echo strtoupper(substr($ocu['nombres_apellidos'], 0, 2)); ?>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-noir"><?php echo htmlspecialchars($ocu['nombres_apellidos']); ?></div>
-                                        <div class="text-xs text-gray-500">
-                                            <?php echo $ocu['genero'] == 'M' ? 'Masculino' : 'Femenino'; ?> · <?php echo $ocu['edad']; ?> años
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-medium text-noir"><?php echo htmlspecialchars($ocu['ci_pasaporte']); ?></div>
-                                <div class="text-xs text-gray-500"><?php echo htmlspecialchars($ocu['nacionalidad']); ?></div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-700"><?php echo htmlspecialchars($ocu['profesion'] ?: 'N/A'); ?></div>
-                                <div class="text-xs text-gray-500"><?php echo htmlspecialchars($ocu['objeto'] ?: 'Sin especificar'); ?></div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-noir text-white">
-                                    <?php echo $ocu['nro_pieza']; ?>
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-medium text-noir"><?php echo formatDate($ocu['fecha_ingreso']); ?></div>
-                                <div class="text-xs text-gray-500"><?php echo $ocu['nro_dias']; ?> día<?php echo $ocu['nro_dias'] > 1 ? 's' : ''; ?></div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-700"><?php echo htmlspecialchars($ocu['procedencia'] ?: 'N/A'); ?></div>
-                                <div class="text-xs text-gray-500">→ <?php echo htmlspecialchars($ocu['prox_destino'] ?: 'N/A'); ?></div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2 justify-center">
-                                    <a 
-                                        href="<?php echo BASE_PATH; ?>/views/huespedes/editar.php?id=<?php echo $ocu['id']; ?>"
-                                        class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-200 flex items-center gap-1 shadow-md hover:shadow-lg min-w-[110px] justify-center"
-                                        title="Editar datos del huésped"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        Editar
-                                    </a>
-                                    <button 
-                                        type="button" 
+    <!-- Tabla Minimalista -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-gray-700">
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Huésped</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documento</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hab.</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-in</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-out</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Días</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Procedencia</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <?php foreach ($ocupaciones as $idx => $ocu): ?>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-gray-900 dark:text-white"><?php echo htmlspecialchars($ocu['nombres_apellidos']); ?></div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo $ocu['genero'] == 'M' ? 'M' : 'F'; ?> · <?php echo $ocu['edad']; ?> años</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-gray-700 dark:text-gray-300"><?php echo htmlspecialchars($ocu['ci_pasaporte']); ?></div>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-gray-800 dark:bg-gray-600 rounded">
+                                <?php echo $ocu['nro_pieza']; ?>
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                            <?php echo date('d/m/Y', strtotime($ocu['fecha_ingreso'])); ?>
+                        </td>
+                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                            <?php echo date('d/m/Y', strtotime($ocu['fecha_salida_estimada'])); ?>
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+                            <?php echo $ocu['nro_dias']; ?>
+                        </td>
+                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                            <?php echo htmlspecialchars($ocu['procedencia'] ?: 'N/A'); ?>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <a href="<?php echo BASE_PATH; ?>/views/huespedes/editar.php?id=<?php echo $ocu['id']; ?>"
+                                   class="px-2.5 py-1.5 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 rounded transition-colors"
+                                   title="Editar">
+                                    Editar
+                                </a>
+                                <a href="<?php echo BASE_PATH; ?>/views/huespedes/extender_estadia.php?id=<?php echo $ocu['id']; ?>"
+                                   class="px-2.5 py-1.5 text-xs font-medium text-white rounded transition-colors"
+                                   style="background-color: #6b7c3e;"
+                                   onmouseover="this.style.backgroundColor='#5a6833'"
+                                   onmouseout="this.style.backgroundColor='#6b7c3e'"
+                                   title="Extender">
+                                    Extender
+                                </a>
+                                <button type="button"
                                         onclick="abrirModalCheckout(<?php echo $ocu['id']; ?>, '<?php echo htmlspecialchars($ocu['nombres_apellidos']); ?>', '<?php echo $ocu['nro_pieza']; ?>')"
-                                        class="px-4 py-2 bg-red-700 text-white text-sm font-medium rounded-lg hover:bg-red-800 transition-all duration-200 shadow-md hover:shadow-lg min-w-[110px]"
-                                    >
-                                        Check-out
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                                        class="px-2.5 py-1.5 text-xs font-medium text-white bg-red-800 hover:bg-red-900 rounded transition-colors"
+                                        title="Check-out">
+                                    Check-out
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 <?php endif; ?>
 

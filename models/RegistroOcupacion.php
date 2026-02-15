@@ -170,5 +170,94 @@ class RegistroOcupacion {
             return 0;
         }
     }
+    
+    /**
+     * Buscar registro reciente de un huésped en una habitación específica
+     * Útil para detectar si se debe extender estadía en lugar de crear nuevo registro
+     */
+    public function buscarRegistroReciente($huesped_id, $habitacion_id, $dias_atras = 2) {
+        try {
+            $fecha_limite = date('Y-m-d', strtotime("-$dias_atras days"));
+            
+            $sql = "SELECT * FROM registro_ocupacion 
+                    WHERE huesped_id = :huesped_id 
+                    AND habitacion_id = :habitacion_id
+                    AND fecha_salida_estimada >= :fecha_limite
+                    ORDER BY fecha_salida_estimada DESC 
+                    LIMIT 1";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([
+                ':huesped_id' => $huesped_id,
+                ':habitacion_id' => $habitacion_id,
+                ':fecha_limite' => $fecha_limite
+            ]);
+            
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("Error en buscarRegistroReciente: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Extender la estadía de una ocupación existente
+     * Actualiza fecha_salida_estimada, nro_dias y reactiva si está finalizado
+     */
+    public function extenderEstadia($ocupacion_id, $dias_adicionales) {
+        try {
+            $this->conn->beginTransaction();
+            
+            // Obtener el registro actual
+            $sql = "SELECT * FROM registro_ocupacion WHERE id = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id' => $ocupacion_id]);
+            $ocupacion = $stmt->fetch();
+            
+            if (!$ocupacion) {
+                throw new Exception("Ocupación no encontrada");
+            }
+            
+            // Calcular nueva fecha de salida y total de días
+            $fecha_salida_actual = $ocupacion['fecha_salida_estimada'];
+            $nueva_fecha_salida = date('Y-m-d', strtotime($fecha_salida_actual . " +$dias_adicionales days"));
+            $nuevo_total_dias = $ocupacion['nro_dias'] + $dias_adicionales;
+            
+            // Actualizar el registro
+            $sql = "UPDATE registro_ocupacion 
+                    SET nro_dias = :nro_dias,
+                        fecha_salida_estimada = :fecha_salida_estimada,
+                        estado = 'activo',
+                        fecha_salida_real = NULL
+                    WHERE id = :id";
+            
+            $stmt = $this->conn->prepare($sql);
+            $result = $stmt->execute([
+                ':nro_dias' => $nuevo_total_dias,
+                ':fecha_salida_estimada' => $nueva_fecha_salida,
+                ':id' => $ocupacion_id
+            ]);
+            
+            if ($result) {
+                // Asegurar que la habitación esté en estado 'ocupada'
+                $this->actualizarEstadoHabitacion($ocupacion['habitacion_id'], 'ocupada');
+                
+                $this->conn->commit();
+                return [
+                    'success' => true,
+                    'nueva_fecha_salida' => $nueva_fecha_salida,
+                    'total_dias' => $nuevo_total_dias
+                ];
+            }
+            
+            $this->conn->rollBack();
+            return ['success' => false, 'error' => 'No se pudo actualizar el registro'];
+            
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            error_log("Error en extenderEstadia: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
 }
 ?>

@@ -42,6 +42,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar_ingreso']))
     }
 }
 
+// Procesar edición de método de pago
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['editar_metodo_pago'])) {
+    try {
+        $finanzasModel = new Finanzas();
+        
+        $ingreso_id = intval($_POST['ingreso_id']);
+        $metodo_pago_nuevo = clean_input($_POST['metodo_pago_nuevo']);
+        $numero_transaccion = !empty($_POST['numero_transaccion']) ? clean_input($_POST['numero_transaccion']) : null;
+        
+        if ($finanzasModel->editarMetodoPagoIngreso($ingreso_id, $metodo_pago_nuevo, $numero_transaccion)) {
+            $mensaje = 'Método de pago actualizado correctamente a: ' . strtoupper($metodo_pago_nuevo);
+            $tipo_mensaje = 'success';
+        } else {
+            throw new Exception('Error al actualizar el método de pago');
+        }
+    } catch (Exception $e) {
+        $mensaje = 'Error: ' . $e->getMessage();
+        $tipo_mensaje = 'danger';
+        error_log("Error al editar método de pago: " . $e->getMessage());
+    }
+}
+
 // Obtener ingresos
 $finanzasModel = new Finanzas();
 $fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-d', strtotime('-30 days'));
@@ -203,6 +225,7 @@ include __DIR__ . '/../../includes/header.php';
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Huésped</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Método</th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Monto</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
@@ -230,6 +253,7 @@ include __DIR__ . '/../../includes/header.php';
                                             if ($ing['metodo_pago'] == 'efectivo') echo 'bg-green-100 text-green-800';
                                             elseif ($ing['metodo_pago'] == 'qr') echo 'bg-blue-100 text-blue-800';
                                             elseif ($ing['metodo_pago'] == 'tarjeta') echo 'bg-purple-100 text-purple-800';
+                                            elseif ($ing['metodo_pago'] == 'pendiente') echo 'bg-orange-100 text-orange-800';
                                             else echo 'bg-gray-100 text-gray-800';
                                             ?>">
                                             <?php echo strtoupper($ing['metodo_pago']); ?>
@@ -238,11 +262,20 @@ include __DIR__ . '/../../includes/header.php';
                                     <td class="px-4 py-3 text-right">
                                         <span class="text-sm font-bold text-green-600">Bs. <?php echo formatMoney($ing['monto']); ?></span>
                                     </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <button 
+                                            onclick="abrirModalEditarMetodo(<?php echo $ing['id']; ?>, '<?php echo htmlspecialchars($ing['concepto']); ?>', '<?php echo $ing['metodo_pago']; ?>', <?php echo $ing['monto']; ?>)"
+                                            class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium transition-colors"
+                                            title="Editar método de pago"
+                                        >
+                                            <i class="fas fa-edit"></i> Editar
+                                        </button>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                             <?php if (empty($ingresos)): ?>
                                 <tr>
-                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                         <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                         </svg>
@@ -253,7 +286,7 @@ include __DIR__ . '/../../includes/header.php';
                         </tbody>
                         <tfoot class="bg-noir dark:bg-black text-white">
                             <tr>
-                                <th colspan="4" class="px-4 py-4 text-right text-sm font-semibold uppercase tracking-wider">TOTAL:</th>
+                                <th colspan="5" class="px-4 py-4 text-right text-sm font-semibold uppercase tracking-wider">TOTAL:</th>
                                 <th class="px-4 py-4 text-right text-lg font-bold">Bs. <?php echo formatMoney($total); ?></th>
                             </tr>
                         </tfoot>
@@ -262,5 +295,202 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 </div>
+
+<!-- Modal para editar método de pago -->
+<div id="modalEditarMetodo" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; border-radius: 12px; width: 90%; max-width: 500px;">
+        <h2 class="text-xl font-bold text-noir mb-4">
+            <i class="fas fa-edit text-blue-600"></i> Editar Método de Pago
+        </h2>
+        
+        <form method="POST" id="formEditarMetodo">
+            <input type="hidden" name="editar_metodo_pago" value="1">
+            <input type="hidden" name="ingreso_id" id="edit_ingreso_id">
+            
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Concepto:</label>
+                <p id="edit_concepto" class="text-gray-600 bg-gray-50 p-3 rounded-lg text-sm"></p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Monto:</label>
+                <p id="edit_monto" class="text-xl font-bold text-green-600"></p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Método de Pago Actual:
+                </label>
+                <p id="edit_metodo_actual" class="text-gray-600 bg-yellow-50 p-3 rounded-lg font-semibold"></p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Nuevo Método de Pago: <span class="text-red-500">*</span>
+                </label>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="metodo_pago_nuevo" 
+                            value="efectivo"
+                            onchange="toggleNumeroTransaccionEdit()"
+                            class="hidden"
+                            id="edit_metodo_efectivo"
+                        >
+                        <div id="edit_btn_efectivo" class="flex flex-col items-center justify-center gap-1 p-2 border-2 border-gray-300 bg-white rounded-lg">
+                            <i class="fas fa-money-bill-wave text-lg text-gray-600"></i>
+                            <span class="font-semibold text-xs text-gray-700">Efectivo</span>
+                        </div>
+                    </label>
+                    
+                    <label class="cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="metodo_pago_nuevo" 
+                            value="qr"
+                            onchange="toggleNumeroTransaccionEdit()"
+                            class="hidden"
+                            id="edit_metodo_qr"
+                        >
+                        <div id="edit_btn_qr" class="flex flex-col items-center justify-center gap-1 p-2 border-2 border-gray-300 bg-white rounded-lg">
+                            <i class="fas fa-qrcode text-lg text-gray-600"></i>
+                            <span class="font-semibold text-xs text-gray-700">QR</span>
+                        </div>
+                    </label>
+                    
+                    <label class="cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="metodo_pago_nuevo" 
+                            value="pendiente"
+                            onchange="toggleNumeroTransaccionEdit()"
+                            class="hidden"
+                            id="edit_metodo_pendiente"
+                        >
+                        <div id="edit_btn_pendiente" class="flex flex-col items-center justify-center gap-1 p-2 border-2 border-gray-300 bg-white rounded-lg">
+                            <i class="fas fa-clock text-lg text-gray-600"></i>
+                            <span class="font-semibold text-xs text-gray-700">Pendiente</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="edit_numero_transaccion_container" style="display: none;" class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Número de Transacción (Opcional):
+                </label>
+                <input 
+                    type="text" 
+                    name="numero_transaccion" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    placeholder="Ingrese el número de transacción"
+                >
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button 
+                    type="submit"
+                    class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                >
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+                <button 
+                    type="button"
+                    onclick="cerrarModalEdit()"
+                    class="px-4 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-semibold transition-colors"
+                >
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirModalEditarMetodo(id, concepto, metodoActual, monto) {
+    document.getElementById('edit_ingreso_id').value = id;
+    document.getElementById('edit_concepto').textContent = concepto;
+    document.getElementById('edit_monto').textContent = 'Bs. ' + parseFloat(monto).toFixed(2);
+    document.getElementById('edit_metodo_actual').textContent = metodoActual.toUpperCase();
+    document.getElementById('modalEditarMetodo').style.display = 'block';
+    
+    // Seleccionar el método actual por defecto
+    const radioId = 'edit_metodo_' + metodoActual;
+    const radio = document.getElementById(radioId);
+    if (radio) {
+        radio.checked = true;
+        cambiarMetodoPagoEdit(metodoActual);
+    }
+}
+
+function cerrarModalEdit() {
+    document.getElementById('modalEditarMetodo').style.display = 'none';
+}
+
+function cambiarMetodoPagoEdit(metodo) {
+    const btnEfectivo = document.getElementById('edit_btn_efectivo');
+    const btnQr = document.getElementById('edit_btn_qr');
+    const btnPendiente = document.getElementById('edit_btn_pendiente');
+    
+    const inactivo = 'flex flex-col items-center justify-center gap-1 p-2 border-2 border-gray-300 bg-white rounded-lg';
+    
+    // Resetear todos
+    btnEfectivo.className = inactivo;
+    btnQr.className = inactivo;
+    btnPendiente.className = inactivo;
+    
+    // Activar el seleccionado
+    if (metodo === 'efectivo') {
+        btnEfectivo.className = 'flex flex-col items-center justify-center gap-1 p-2 border-2 border-green-500 bg-green-50 rounded-lg';
+        btnEfectivo.querySelector('i').className = 'fas fa-money-bill-wave text-lg text-green-600';
+        btnEfectivo.querySelector('span').className = 'font-semibold text-xs text-green-700';
+    } else if (metodo === 'qr') {
+        btnQr.className = 'flex flex-col items-center justify-center gap-1 p-2 border-2 border-purple-500 bg-purple-50 rounded-lg';
+        btnQr.querySelector('i').className = 'fas fa-qrcode text-lg text-purple-600';
+        btnQr.querySelector('span').className = 'font-semibold text-xs text-purple-700';
+    } else if (metodo === 'pendiente') {
+        btnPendiente.className = 'flex flex-col items-center justify-center gap-1 p-2 border-2 border-orange-500 bg-orange-50 rounded-lg';
+        btnPendiente.querySelector('i').className = 'fas fa-clock text-lg text-orange-600';
+        btnPendiente.querySelector('span').className = 'font-semibold text-xs text-orange-700';
+    }
+}
+
+function toggleNumeroTransaccionEdit() {
+    const metodoQr = document.getElementById('edit_metodo_qr').checked;
+    const container = document.getElementById('edit_numero_transaccion_container');
+    container.style.display = metodoQr ? 'block' : 'none';
+    
+    // Actualizar visualización
+    let metodo;
+    if (document.getElementById('edit_metodo_efectivo').checked) metodo = 'efectivo';
+    else if (document.getElementById('edit_metodo_qr').checked) metodo = 'qr';
+    else if (document.getElementById('edit_metodo_pendiente').checked) metodo = 'pendiente';
+    
+    if (metodo) cambiarMetodoPagoEdit(metodo);
+}
+
+// Cerrar modal al hacer clic fuera de él
+window.onclick = function(event) {
+    const modal = document.getElementById('modalEditarMetodo');
+    if (event.target == modal) {
+        cerrarModalEdit();
+    }
+}
+
+// Añadir listeners a los radio buttons del modal
+document.getElementById('edit_metodo_efectivo').addEventListener('change', function() {
+    cambiarMetodoPagoEdit('efectivo');
+});
+
+document.getElementById('edit_metodo_qr').addEventListener('change', function() {
+    cambiarMetodoPagoEdit('qr');
+});
+
+document.getElementById('edit_metodo_pendiente').addEventListener('change', function() {
+    cambiarMetodoPagoEdit('pendiente');
+});
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

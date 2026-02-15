@@ -36,51 +36,452 @@ include __DIR__ . '/../../includes/header.php';
 <style>
 @media print {
     .no-print { display: none !important; }
+    
+    /* Ocultar completamente todo el header/nav */
+    nav,
+    header,
+    .fixed,
+    body > nav,
+    [role="navigation"],
+    #mobile-menu,
+    #mobile-menu-btn,
+    button#theme-toggle {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+    }
+    
+    /* Asegurar que nada con position fixed se muestre */
+    * {
+        position: static !important;
+    }
+    
+    /* Ocultar scripts y elementos no deseados */
+    script,
+    noscript,
+    .hidden {
+        display: none !important;
+    }
+    
+    /* Resetear body para impresión */
+    body {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    /* Resetear contenedores principales */
+    .pt-12,
+    .pt-20,
+    .py-12,
+    .py-8,
+    .px-6 {
+        padding: 0 !important;
+    }
+    
+    .max-w-7xl {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Asegurar que el contenido principal sea limpio */
+    body > div,
+    body > div > div {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Solo el print-container debe tener padding */
+    body > * {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    body .print-container {
+        padding: 0.5cm !important;
+    }
+    
     @page {
         size: letter portrait;
-        margin: 0.5cm 1cm;
+        margin: 1.2cm 1cm 1cm 1cm;
     }
+    
+    /* Forzar impresi\u00f3n de colores de fondo */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    
     body {
         background: white !important;
         padding: 0 !important;
-        font-size: 8pt;
+        font-size: 9pt;
+        color: #000 !important;
     }
     .print-container {
         display: block !important;
         background: white !important;
         box-shadow: none !important;
         border: none !important;
+        border-radius: 0 !important;
         margin: 0 !important;
-        padding: 0 !important;
-        transform: scale(0.95);
-        transform-origin: top center;
+        padding: 0.5cm !important;
+        max-width: 100% !important;
+        width: 100% !important;
     }
-    table { 
-        page-break-inside: avoid; 
-        font-size: 7pt;
+    
+    /* Eliminar todos los bordes redondeados */
+    .rounded,
+    .rounded-xl,
+    .rounded-2xl,
+    .rounded-lg {
+        border-radius: 0 !important;
+    }
+    
+    /* Header del informe - ocultar en impresión */
+    .print-header {
+        display: none !important;
+    }
+    
+    .print-header-formal {
+        display: block !important;
         margin-bottom: 0.3cm !important;
+        padding-bottom: 0.15cm !important;
+        page-break-after: avoid;
     }
+    
+    /* Tablas pueden dividirse entre páginas */
+    table { 
+        page-break-inside: auto; 
+        font-size: 8pt;
+        margin-bottom: 0.3cm !important;
+        border-collapse: collapse !important;
+    }
+    
+    /* Evitar que las filas se corten */
+    table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    /* Headers de tablas se repiten */
+    thead {
+        display: table-header-group;
+        font-weight: bold !important;
+    }
+    
+    /* Estilo formal para headers de tabla */
+    table thead tr {
+        background-color: #e8e8e8 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    table thead th {
+        border: 1px solid #000 !important;
+        background-color: #e8e8e8 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* Bordes de celdas */
+    table td,
+    table th {
+        border: 1px solid #666 !important;
+    }
+    
+    /* Footers de tablas */
+    tfoot {
+        display: table-footer-group;
+    }
+    
     table th,
     table td {
-        padding: 1px 3px !important;
+        padding: 2px 4px !important;
+        line-height: 1.3 !important;
+    }
+    
+    /* Filas totales destacadas */
+    tr.font-bold {
+        background-color: #f0f0f0 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    tr.bg-green-100 {
+        background-color: #d1fae5 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    tr.bg-blue-100 {
+        background-color: #dbeafe !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    tr.bg-red-100 {
+        background-color: #fee2e2 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .signature-section { 
+        margin-top: 1.5cm !important; 
+        page-break-inside: avoid;
+        border-top: 1px solid #000 !important;
+        padding-top: 0.3cm !important;
+    }
+    
+    .signature-section .border-t {
+        border-top: 1px solid #000 !important;
+    }
+    
+    /* Estilos para el resumen consolidado */
+    .mb-3.border {
+        border: 1px solid #000 !important;
+    }
+    
+    /* Tabla del resumen consolidado */
+    .mb-3.border table {
+        border: none !important;
+    }
+    
+    .mb-3.border table td {
+        border: none !important;
+        border-bottom: 1px solid #ddd !important;
+        padding: 0.1cm 0.2cm !important;
+    }
+    
+    .mb-3.border table tr:last-child td {
+        border-bottom: none !important;
+    }
+    
+    /* Fila de "Efectivo a Entregar" destacada */
+    .mb-3.border table tr.border-y td,
+    .mb-3.border table tr.bg-yellow-50 td {
+        border-top: 2px solid #000 !important;
+        border-bottom: 2px solid #000 !important;
+        background-color: #fef3c7 !important;
+        font-size: 10pt !important;
+        padding: 0.15cm 0.2cm !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* Mantener colores de texto en resumen */
+    .mb-3.border .text-green-600 {
+        color: #059669 !important;
+    }
+    
+    .mb-3.border .text-blue-600 {
+        color: #2563eb !important;
+    }
+    
+    .mb-3.border .text-red-600 {
+        color: #dc2626 !important;
+    }
+    
+    .mb-3.border .text-yellow-800 {
+        color: #92400e !important;
+    }
+    
+    h1 { 
+        font-size: 15pt; 
+        margin-bottom: 0.15cm !important; 
         line-height: 1.2 !important;
     }
-    .signature-section { 
-        margin-top: 1cm !important; 
-        page-break-inside: avoid; 
+    h2 { 
+        font-size: 12pt; 
+        margin-bottom: 0.15cm !important; 
+        line-height: 1.2 !important;
     }
-    h1 { font-size: 14pt; margin-bottom: 0.2cm !important; }
-    h2 { font-size: 11pt; margin-bottom: 0.2cm !important; }
-    h3 { font-size: 9pt; margin-bottom: 0.1cm !important; }
+    h3 { 
+        font-size: 10pt; 
+        margin-bottom: 0.1cm !important;
+        line-height: 1.2 !important;
+    }
     
     /* Reducir espacios entre secciones */
     .print-container > div {
         margin-bottom: 0.3cm !important;
     }
     
-    /* Hacer títulos de secciones más compactos */
+    /* Eliminar espacio superior de la primera sección después del resumen */
+    .summary-table + .mb-4,
+    .summary-table ~ .mb-4:first-of-type {
+        margin-top: 0 !important;
+        page-break-before: avoid !important;
+    }
+    
+    /* Hacer títulos de secciones más compactos y formales */
+    .bg-gray-800,
+    .bg-green-600,
+    .bg-blue-600,
+    .bg-red-600 {
+        color: #fff !important;
+        border: none !important;
+        border-bottom: 2px solid #000 !important;
+        padding: 0.15cm 0.2cm !important;
+        margin-bottom: 0.15cm !important;
+        page-break-after: avoid;
+        font-size: 10pt !important;
+        font-weight: bold !important;
+        text-transform: uppercase;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .bg-green-600 {
+        background-color: #059669 !important;
+    }
+    
+    .bg-blue-600 {
+        background-color: #2563eb !important;
+    }
+    
+    .bg-red-600 {
+        background-color: #dc2626 !important;
+    }
+    
     .bg-gray-800 {
-        padding: 0.1cm 0.2cm !important;
+        background-color: #1f2937 !important;
+    }
+    
+    .bg-green-600 span,
+    .bg-blue-600 span,
+    .bg-red-600 span {
+        display: inline !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+    
+    /* Resumen ejecutivo - cambiar a tabla formal */
+    .summary-cards {
+        display: none !important;
+    }
+    
+    .summary-table {
+        display: table !important;
+        width: 100% !important;
+        margin-bottom: 0.25cm !important;
+        border: 1px solid #000 !important;
+        page-break-after: avoid !important;
+    }
+    
+    /* Evitar que secciones se corten al inicio */
+    .mb-4 {
+        page-break-inside: auto;
+        margin-bottom: 0.3cm !important;
+    }
+    
+    /* Primera sección debe estar pegada al resumen */
+    .mb-4:first-of-type {
+        margin-top: 0 !important;
+        page-break-before: avoid !important;
+    }
+    
+    /* Asegurar que no haya espacios extra */
+    .summary-table {
+        margin-bottom: 0.25cm !important;
+    }
+    
+    /* Siguiente elemento después de la tabla de resumen */
+    .print-container > .summary-table + * {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    /* Asegurar que subtotales no se separen de sus tablas */
+    tr.font-bold {
+        page-break-before: avoid;
+    }
+    
+    /* Mantener colores de fondo para mejor legibilidad */
+    .bg-green-50 {
+        background-color: #f0fdf4 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .bg-blue-50 {
+        background-color: #eff6ff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .bg-red-50 {
+        background-color: #fef2f2 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .bg-yellow-50 {
+        background-color: #fefce8 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .bg-gray-50 {
+        background-color: #f9fafb !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* Mantener colores de texto legibles */
+    .text-green-600,
+    .text-green-700,
+    .text-green-800 {
+        color: #065f46 !important;
+    }
+    
+    .text-blue-600,
+    .text-blue-700 {
+        color: #1e40af !important;
+    }
+    
+    .text-red-600,
+    .text-red-700 {
+        color: #b91c1c !important;
+    }
+    
+    .text-yellow-700,
+    .text-yellow-800 {
+        color: #a16207 !important;
+    }
+    
+    .text-gray-500,
+    .text-gray-600,
+    .text-gray-700,
+    .text-gray-900 {
+        color: #000 !important;
+    }
+    
+    /* Texto blanco para headers de secciones */
+    .bg-green-600 *,
+    .bg-blue-600 *,
+    .bg-red-600 *,
+    .bg-gray-800 * {
+        color: #fff !important;
+    }
+    
+    /* Enlaces y botones */
+    a, button {
+        color: #000 !important;
+        text-decoration: none !important;
+    }
+    
+    /* Bordes visibles */
+    .border-gray-300,
+    .border-gray-200,
+    .border-gray-700,
+    .border-gray-800 {
+        border-color: #666 !important;
     }
 }
 
@@ -185,8 +586,8 @@ include __DIR__ . '/../../includes/header.php';
 <!-- INFORME IMPRIMIBLE -->
 <div class="print-container bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden p-6">
     
-    <!-- Header del Informe -->
-    <div class="mb-4 pb-3 border-b-2 border-gray-800 dark:border-gray-600">
+    <!-- Header decorativo (solo pantalla) -->
+    <div class="print-header mb-4 pb-3 border-b-2 border-gray-800 dark:border-gray-600">
         <div class="flex justify-between items-start">
             <div>
                 <h1 class="text-xl font-bold text-gray-900 dark:text-white">HOTEL CECIL</h1>
@@ -199,9 +600,32 @@ include __DIR__ . '/../../includes/header.php';
             </div>
         </div>
     </div>
+    
+    <!-- Header formal (solo impresión) -->
+    <div class="print-header-formal" style="display: none;">
+        <table class="w-full text-xs" style="border: none;">
+            <tr>
+                <td style="width: 70%; vertical-align: top; border: none;">
+                    <div style="font-size: 16pt; font-weight: bold; margin-bottom: 0.1cm;">HOTEL CECIL</div>
+                    <div style="font-size: 11pt; font-weight: 600; margin-bottom: 0.1cm;">INFORME DE LIQUIDACIÓN DE CAJA</div>
+                    <div style="font-size: 9pt;">Recepcionista: Isaac Vargas</div>
+                </td>
+                <td style="width: 30%; vertical-align: top; text-align: right; border: none;">
+                    <div style="font-size: 9pt; line-height: 1.4;">
+                        <strong>Período:</strong><br>
+                        <?php echo formatDate($fecha_inicio); ?><br>
+                        al <?php echo formatDate($fecha_fin); ?><br><br>
+                        <strong>Fecha de Emisión:</strong><br>
+                        <?php echo date('d/m/Y H:i'); ?>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <div style="border-bottom: 2px solid #000; margin-top: 0.2cm; margin-bottom: 0.3cm;"></div>
+    </div>
 
-    <!-- Resumen Ejecutivo -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 text-xs">
+    <!-- Resumen Ejecutivo (solo pantalla) -->
+    <div class="summary-cards grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 text-xs">
         <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-2">
             <p class="text-green-700 dark:text-green-400 font-semibold mb-1 text-[10px] md:text-xs">Ingresos Efectivo</p>
             <p class="text-sm md:text-lg font-bold text-green-900 dark:text-green-300">Bs. <?php echo formatMoney($total_efectivo); ?></p>
@@ -223,6 +647,38 @@ include __DIR__ . '/../../includes/header.php';
             <p class="text-[9px] md:text-[10px] text-yellow-600 dark:text-yellow-500">A entregar</p>
         </div>
     </div>
+    
+    <!-- Resumen Ejecutivo formal (solo impresión) -->
+    <table class="summary-table w-full text-xs mb-4" style="display: none; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #e8e8e8; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <th style="border: 1px solid #000; padding: 0.15cm; text-align: left; font-weight: bold;">CONCEPTO</th>
+                <th style="border: 1px solid #000; padding: 0.15cm; text-align: center; font-weight: bold;">TRANSACCIONES</th>
+                <th style="border: 1px solid #000; padding: 0.15cm; text-align: right; font-weight: bold;">MONTO (Bs.)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="background-color: #d1fae5;">
+                <td style="border: 1px solid #000; padding: 0.1cm;">Ingresos en Efectivo</td>
+                <td style="border: 1px solid #000; padding: 0.1cm; text-align: center;"><?php echo count($ingresos_efectivo); ?></td>
+                <td style="border: 1px solid #000; padding: 0.1cm; text-align: right; font-weight: 600; color: #065f46;"><?php echo formatMoney($total_efectivo); ?></td>
+            </tr>
+            <tr style="background-color: #dbeafe;">
+                <td style="border: 1px solid #000; padding: 0.1cm;">Ingresos por QR (Banco)</td>
+                <td style="border: 1px solid #000; padding: 0.1cm; text-align: center;"><?php echo count($ingresos_qr); ?></td>
+                <td style="border: 1px solid #000; padding: 0.1cm; text-align: right; font-weight: 600; color: #1e40af;"><?php echo formatMoney($total_qr); ?></td>
+            </tr>
+            <tr style="background-color: #fee2e2;">
+                <td style="border: 1px solid #000; padding: 0.1cm;">Egresos (Gastos)</td>
+                <td style="border: 1px solid #000; padding: 0.1cm; text-align: center;"><?php echo count($egresos); ?></td>
+                <td style="border: 1px solid #000; padding: 0.1cm; text-align: right; font-weight: 600; color: #b91c1c;"><?php echo formatMoney($total_egresos); ?></td>
+            </tr>
+            <tr style="background-color: #fef3c7; font-weight: bold;">
+                <td style="border: 1px solid #000; padding: 0.1cm; font-weight: bold;" colspan="2">BALANCE DE CAJA (A Entregar)</td>
+                <td style="border: 1px solid #000; padding: 0.1cm; text-align: right; font-size: 10pt; font-weight: bold; color: #92400e;"><?php echo formatMoney($balance_recepcionista); ?></td>
+            </tr>
+        </tbody>
+    </table>
 
     <!-- SECCIÓN 1: INGRESOS EN EFECTIVO -->
     <div class="mb-4">
@@ -368,9 +824,9 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
     <!-- RESUMEN CONSOLIDADO Y LIQUIDACIÓN -->
-    <div class="mb-3 border border-gray-800 dark:border-gray-600">
+    <div class="mb-3 border border-gray-800 dark:border-gray-600" style="border: 1px solid #000;">
         <div class="bg-gray-800 dark:bg-gray-700 text-white px-3 py-1">
-            <h3 class="text-xs font-bold uppercase tracking-wide">Resumen y Liquidación</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wide">4. Resumen y Liquidación Final</h3>
         </div>
         
         <div class="p-2 sm:p-3">
@@ -406,25 +862,14 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
     <!-- FIRMAS Y VALIDACIÓN -->
-    <div class="signature-section mt-6">
-        <div class="grid grid-cols-2 gap-4 md:gap-8 text-center text-[10px] md:text-xs mb-3">
-            <div>
-                <div class="border-t border-gray-800 dark:border-gray-600 pt-1 mb-1 mt-8 md:mt-12">
-                    <p class="font-bold text-gray-900 dark:text-white">RECEPCIONISTA</p>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400">Isaac Vargas</p>
-            </div>
-            <div>
-                <div class="border-t border-gray-800 dark:border-gray-600 pt-1 mb-1 mt-8 md:mt-12">
-                    <p class="font-bold text-gray-900 dark:text-white">PROPIETARIO</p>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400">Don Rodolfo</p>
-            </div>
-        </div>
-        
-        <div class="text-center text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-300 dark:border-gray-700 pt-2">
-            <p>Este documento certifica la liquidación de caja del período indicado.</p>
-            <p>Documento generado automáticamente el <?php echo date('d/m/Y'); ?> a las <?php echo date('H:i'); ?> hs. - Sistema Hotel Cecil v1.0</p>
+    <div class="signature-section mt-6 pt-3" style="border-top: 1px solid #000; margin-top: 0.5cm; padding-top: 0.3cm; text-align: center;">
+        <p style="font-size: 8pt; margin-bottom: 0.8cm;">
+            Yo, <strong>Rodolfo Moscoso</strong>, recibo <strong>Bs. <?php echo formatMoney($balance_recepcionista); ?></strong> 
+            desde la fecha <strong><?php echo date('d/m/Y', strtotime($fecha_inicio)); ?></strong> 
+            hasta la fecha <strong><?php echo date('d/m/Y', strtotime($fecha_fin)); ?></strong>
+        </p>
+        <div style="margin: 1.5cm auto 0 auto; border-top: 1px solid #000; width: 40%; text-align: center; padding-top: 0.1cm; font-size: 7pt;">
+            Firma
         </div>
     </div>
 

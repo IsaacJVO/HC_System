@@ -47,7 +47,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Habitación no encontrada');
         }
         
-        // Validar capacidad de habitación vs número de personas
+        // NUEVO: Verificar si existe un registro reciente del huésped en esta habitación
+        // Si es así, sugerir extender en lugar de crear nuevo registro
+        $registro_reciente = $registroModel->buscarRegistroReciente($huesped_id, $habitacion['id'], 2);
+        if ($registro_reciente) {
+            // Redirigir a la página de extender estadía
+            $mensaje_aviso = "Este huésped tiene una estadía reciente en esta habitación. Redirigiendo a extensión de estadía...";
+            header("refresh:2;url=extender_estadia.php?id={$registro_reciente['id']}");
+            $mensaje = $mensaje_aviso;
+            $tipo_mensaje = 'info';
+        } else {
+            // Continuar con el registro normal
+            
+            // Validar capacidad de habitación vs número de personas
         $tipo_hab = $habitacion['tipo'];
         $capacidad_maxima = 2; // Por defecto
         if ($tipo_hab == 'Individual') $capacidad_maxima = 1;
@@ -211,12 +223,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensaje .= " Se registraron {$acomp_count} acompañante(s). ";
             }
         }
-                $metodo_pago_texto = $metodo_pago === 'qr' ? 'QR' : 'Efectivo';
-        $mensaje .= 'Ocupación e ingreso registrados correctamente. Total: Bs. ' . number_format($monto_total, 2) . ' (' . $metodo_pago_texto . ')';
-        $tipo_mensaje = 'success';
         
-        // Limpiar POST para evitar reenvíos
-        $_POST = [];
+            $metodo_pago_texto = $metodo_pago === 'qr' ? 'QR' : 'Efectivo';
+            $mensaje .= 'Ocupación e ingreso registrados correctamente. Total: Bs. ' . number_format($monto_total, 2) . ' (' . $metodo_pago_texto . ')';
+            $tipo_mensaje = 'success';
+            
+            // Limpiar POST para evitar reenvíos
+            $_POST = [];
+        } // FIN del else de verificación de registro reciente
         
     } catch (PDOException $e) {
         $mensaje = 'Error de base de datos: ' . $e->getMessage();
@@ -663,7 +677,7 @@ include __DIR__ . '/../../includes/header.php';
                     Método de Pago <span class="text-red-500">*</span>
                 </label>
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-3">
                     <!-- Efectivo -->
                     <label class="cursor-pointer">
                         <input 
@@ -675,9 +689,9 @@ include __DIR__ . '/../../includes/header.php';
                             onchange="cambiarMetodoPago('efectivo')"
                             class="hidden"
                         >
-                        <div id="btn_efectivo" class="flex items-center justify-center gap-3 p-4 border-2 border-green-500 bg-green-50 rounded-xl transition-all duration-200 hover:shadow-md">
-                            <i class="fas fa-money-bill-wave text-2xl text-green-600"></i>
-                            <span class="font-semibold text-green-700">Efectivo</span>
+                        <div id="btn_efectivo" class="flex items-center justify-center gap-2 p-3 border-2 border-green-500 bg-green-50 rounded-xl transition-all duration-200 hover:shadow-md">
+                            <i class="fas fa-money-bill-wave text-xl text-green-600"></i>
+                            <span class="font-semibold text-sm text-green-700">Efectivo</span>
                         </div>
                     </label>
                     
@@ -691,9 +705,25 @@ include __DIR__ . '/../../includes/header.php';
                             onchange="cambiarMetodoPago('qr')"
                             class="hidden"
                         >
-                        <div id="btn_qr" class="flex items-center justify-center gap-3 p-4 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-purple-300">
-                            <i class="fas fa-qrcode text-2xl text-gray-600"></i>
-                            <span class="font-semibold text-gray-700">QR</span>
+                        <div id="btn_qr" class="flex items-center justify-center gap-2 p-3 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-purple-300">
+                            <i class="fas fa-qrcode text-xl text-gray-600"></i>
+                            <span class="font-semibold text-sm text-gray-700">QR</span>
+                        </div>
+                    </label>
+                    
+                    <!-- Pendiente -->
+                    <label class="cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="metodo_pago" 
+                            value="pendiente" 
+                            id="metodo_pendiente"
+                            onchange="cambiarMetodoPago('pendiente')"
+                            class="hidden"
+                        >
+                        <div id="btn_pendiente" class="flex items-center justify-center gap-2 p-3 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-orange-300">
+                            <i class="fas fa-clock text-xl text-gray-600"></i>
+                            <span class="font-semibold text-sm text-gray-700">Pendiente</span>
                         </div>
                     </label>
                 </div>
@@ -716,6 +746,22 @@ include __DIR__ . '/../../includes/header.php';
                             class="w-full px-4 py-3 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-noir placeholder-gray-400"
                             placeholder="Ingrese el número de transacción"
                         >
+                    </div>
+                </div>
+                
+                <!-- Aviso Pago Pendiente (se muestra al seleccionar Pendiente) -->
+                <div id="pendiente_aviso_container" style="display: none;" class="mt-4 p-4 bg-orange-50 border-2 border-orange-300 rounded-xl">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-exclamation-triangle text-2xl text-orange-600 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-orange-700 mb-2">
+                                <i class="fas fa-info-circle"></i> Pago Pendiente
+                            </p>
+                            <p class="text-sm text-orange-600">
+                                El huésped será registrado pero el pago quedará marcado como <strong>PENDIENTE</strong>. 
+                                Podrás completar el pago más tarde desde la sección de <strong>Pagos Pendientes</strong> en Finanzas.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1454,34 +1500,47 @@ document.addEventListener('DOMContentLoaded', function() {
 function cambiarMetodoPago(metodo) {
     const btnEfectivo = document.getElementById('btn_efectivo');
     const btnQr = document.getElementById('btn_qr');
+    const btnPendiente = document.getElementById('btn_pendiente');
     const qrContainer = document.getElementById('qr_imagen_container');
+    const pendienteContainer = document.getElementById('pendiente_aviso_container');
     
+    // Estilos inactivos para todos
+    const estiloInactivo = 'flex items-center justify-center gap-2 p-3 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md';
+    const iconoInactivo = 'text-xl text-gray-600';
+    const textoInactivo = 'font-semibold text-sm text-gray-700';
+    
+    // Resetear todos los botones a inactivo
+    btnEfectivo.className = estiloInactivo + ' hover:border-green-300';
+    btnEfectivo.querySelector('i').className = 'fas fa-money-bill-wave ' + iconoInactivo;
+    btnEfectivo.querySelector('span').className = textoInactivo;
+    
+    btnQr.className = estiloInactivo + ' hover:border-purple-300';
+    btnQr.querySelector('i').className = 'fas fa-qrcode ' + iconoInactivo;
+    btnQr.querySelector('span').className = textoInactivo;
+    
+    btnPendiente.className = estiloInactivo + ' hover:border-orange-300';
+    btnPendiente.querySelector('i').className = 'fas fa-clock ' + iconoInactivo;
+    btnPendiente.querySelector('span').className = textoInactivo;
+    
+    // Ocultar todos los contenedores por defecto
+    qrContainer.style.display = 'none';
+    pendienteContainer.style.display = 'none';
+    
+    // Activar el botón seleccionado
     if (metodo === 'efectivo') {
-        // Estilo activo para efectivo
-        btnEfectivo.className = 'flex items-center justify-center gap-3 p-4 border-2 border-green-500 bg-green-50 rounded-xl transition-all duration-200 hover:shadow-md';
-        btnEfectivo.querySelector('i').className = 'fas fa-money-bill-wave text-2xl text-green-600';
-        btnEfectivo.querySelector('span').className = 'font-semibold text-green-700';
-        
-        // Estilo inactivo para QR
-        btnQr.className = 'flex items-center justify-center gap-3 p-4 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-purple-300';
-        btnQr.querySelector('i').className = 'fas fa-qrcode text-2xl text-gray-600';
-        btnQr.querySelector('span').className = 'font-semibold text-gray-700';
-        
-        // Ocultar QR
-        qrContainer.style.display = 'none';
-    } else {
-        // Estilo inactivo para efectivo
-        btnEfectivo.className = 'flex items-center justify-center gap-3 p-4 border-2 border-gray-300 bg-white rounded-xl transition-all duration-200 hover:shadow-md hover:border-green-300';
-        btnEfectivo.querySelector('i').className = 'fas fa-money-bill-wave text-2xl text-gray-600';
-        btnEfectivo.querySelector('span').className = 'font-semibold text-gray-700';
-        
-        // Estilo activo para QR
-        btnQr.className = 'flex items-center justify-center gap-3 p-4 border-2 border-purple-500 bg-purple-50 rounded-xl transition-all duration-200 hover:shadow-md';
-        btnQr.querySelector('i').className = 'fas fa-qrcode text-2xl text-purple-600';
-        btnQr.querySelector('span').className = 'font-semibold text-purple-700';
-        
-        // Mostrar QR
+        btnEfectivo.className = 'flex items-center justify-center gap-2 p-3 border-2 border-green-500 bg-green-50 rounded-xl transition-all duration-200 hover:shadow-md';
+        btnEfectivo.querySelector('i').className = 'fas fa-money-bill-wave text-xl text-green-600';
+        btnEfectivo.querySelector('span').className = 'font-semibold text-sm text-green-700';
+    } else if (metodo === 'qr') {
+        btnQr.className = 'flex items-center justify-center gap-2 p-3 border-2 border-purple-500 bg-purple-50 rounded-xl transition-all duration-200 hover:shadow-md';
+        btnQr.querySelector('i').className = 'fas fa-qrcode text-xl text-purple-600';
+        btnQr.querySelector('span').className = 'font-semibold text-sm text-purple-700';
         qrContainer.style.display = 'block';
+    } else if (metodo === 'pendiente') {
+        btnPendiente.className = 'flex items-center justify-center gap-2 p-3 border-2 border-orange-500 bg-orange-50 rounded-xl transition-all duration-200 hover:shadow-md';
+        btnPendiente.querySelector('i').className = 'fas fa-clock text-xl text-orange-600';
+        btnPendiente.querySelector('span').className = 'font-semibold text-sm text-orange-700';
+        pendienteContainer.style.display = 'block';
     }
 }
 
