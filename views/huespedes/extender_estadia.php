@@ -115,6 +115,20 @@ include __DIR__ . '/../../includes/header.php';
             </p>
         </div>
 
+        <?php if ($ocupacion['estado'] === 'finalizado'): ?>
+        <div class="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5 mr-3"></i>
+                <div>
+                    <p class="text-sm font-medium text-blue-800 dark:text-blue-200">Reactivando estadía</p>
+                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        Esta ocupación está finalizada. Al extender, se reactivará automáticamente y la habitación volverá a estado "ocupada".
+                    </p>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <?php if ($mensaje): ?>
         <div class="mb-6 p-4 rounded-lg <?php echo $tipo_mensaje === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'; ?>">
             <p class="<?php echo $tipo_mensaje === 'success' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'; ?>">

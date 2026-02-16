@@ -6,6 +6,7 @@ $page_title = 'Huéspedes Activos';
 
 $registroModel = new RegistroOcupacion();
 $ocupaciones = $registroModel->obtenerActivos();
+$recientes = $registroModel->obtenerRecientementeFinalizados(48); // Últimas 48 horas
 
 // Procesar finalización de ocupación
 if (isset($_POST['finalizar_ocupacion'])) {
@@ -131,6 +132,72 @@ include __DIR__ . '/../../includes/header.php';
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+<?php endif; ?>
+
+<!-- Checkouts Recientes (últimas 48 horas) -->
+<?php if (!empty($recientes)): ?>
+    <div class="mt-8">
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Checkouts Recientes</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Huéspedes finalizados en las últimas 48 horas · Puedes reactivar su estadía</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Huésped</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documento</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hab.</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Salida</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estadía</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <?php foreach ($recientes as $idx => $ocu): ?>
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-900 dark:text-white"><?php echo htmlspecialchars($ocu['nombres_apellidos']); ?></div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo $ocu['genero'] == 'M' ? 'M' : 'F'; ?> · <?php echo $ocu['edad']; ?> años</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="text-gray-700 dark:text-gray-300"><?php echo htmlspecialchars($ocu['ci_pasaporte']); ?></div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-block px-2 py-1 text-xs font-semibold text-white bg-gray-500 dark:bg-gray-600 rounded">
+                                    <?php echo $ocu['nro_pieza']; ?>
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                <?php 
+                                $salida = strtotime($ocu['fecha_salida_real']);
+                                $ahora = time();
+                                $diff_horas = floor(($ahora - $salida) / 3600);
+                                ?>
+                                <div><?php echo date('d/m/Y H:i', $salida); ?></div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">hace <?php echo $diff_horas; ?>h</div>
+                            </td>
+                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                <?php echo date('d/m/Y', strtotime($ocu['fecha_ingreso'])); ?> - <?php echo date('d/m/Y', strtotime($ocu['fecha_salida_estimada'])); ?>
+                                <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo $ocu['nro_dias']; ?> días</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="<?php echo BASE_PATH; ?>/views/huespedes/extender_estadia.php?id=<?php echo $ocu['id']; ?>"
+                                   class="inline-block px-3 py-1.5 text-xs font-medium text-white rounded transition-colors"
+                                   style="background-color: #6b7c3e;"
+                                   onmouseover="this.style.backgroundColor='#5a6833'"
+                                   onmouseout="this.style.backgroundColor='#6b7c3e'"
+                                   title="Reactivar y extender estadía">
+                                    Reactivar/Extender
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 <?php endif; ?>
 

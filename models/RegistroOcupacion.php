@@ -61,6 +61,28 @@ class RegistroOcupacion {
         return $stmt->fetchAll();
     }
     
+    /**
+     * Obtener ocupaciones finalizadas recientemente (últimas 24-48 horas)
+     * Útil para reactivar/extender si el huésped regresa el mismo día
+     */
+    public function obtenerRecientementeFinalizados($horas = 48) {
+        $fecha_limite = date('Y-m-d H:i:s', strtotime("-$horas hours"));
+        
+        $sql = "SELECT ro.*, h.nombres_apellidos, h.ci_pasaporte, h.genero, h.edad, 
+                h.estado_civil, h.nacionalidad, h.profesion, h.objeto, h.procedencia,
+                hab.numero as numero_habitacion
+                FROM registro_ocupacion ro
+                INNER JOIN huespedes h ON ro.huesped_id = h.id
+                INNER JOIN habitaciones hab ON ro.habitacion_id = hab.id
+                WHERE ro.estado = 'finalizado'
+                AND ro.fecha_salida_real >= :fecha_limite
+                ORDER BY ro.fecha_salida_real DESC";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':fecha_limite' => $fecha_limite]);
+        return $stmt->fetchAll();
+    }
+    
     public function obtenerTodos($limit = 100) {
         $sql = "SELECT ro.*, h.nombres_apellidos, h.ci_pasaporte, hab.numero as numero_habitacion
                 FROM registro_ocupacion ro
