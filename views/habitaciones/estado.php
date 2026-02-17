@@ -370,16 +370,19 @@ body {
             <span class="text-gray-900 dark:text-white font-semibold">Disponible</span>
             <span class="text-gray-500 dark:text-gray-400 font-medium ml-1">(<?php echo $total_disponibles; ?>)</span>
         </div>
+
         <div class="legend-item flex items-center gap-3 rounded-xl">
             <span class="status-dot ocupado"></span>
             <span class="text-gray-900 dark:text-white font-semibold">Ocupada</span>
             <span class="text-gray-500 dark:text-gray-400 font-medium ml-1">(<?php echo $total_ocupadas; ?>)</span>
         </div>
+
         <div class="legend-item flex items-center gap-3 rounded-xl">
             <span class="status-dot limpieza"></span>
             <span class="text-gray-900 dark:text-white font-semibold">Limpieza</span>
             <span class="text-gray-500 dark:text-gray-400 font-medium ml-1">(<?php echo $total_limpieza; ?>)</span>
         </div>
+
         <div class="legend-item flex items-center gap-3 rounded-xl">
             <span class="status-dot mantenimiento"></span>
             <span class="text-gray-900 dark:text-white font-semibold">Mantenimiento</span>
@@ -397,7 +400,8 @@ body {
             <div class="h-px bg-gray-200 flex-1"></div>
         </div>
         
-        <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+        <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2w
+        ">
             <?php foreach ($por_piso[$num_piso] as $hab): 
                 $huesped_info = isset($huespedes_por_habitacion[$hab['numero']]) ? $huespedes_por_habitacion[$hab['numero']] : null;
                 // Debug en comentario HTML
@@ -425,7 +429,7 @@ body {
 
 <!-- Modal -->
 <div id="modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4" onclick="closeModal()">
-    <div class="modal-content max-w-sm w-full p-8" onclick="event.stopPropagation()">
+    <div class="modal-content max-w-lg w-full p-8 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
         <div class="mb-6">
             <div class="flex items-baseline gap-2 mb-1">
                 <h3 class="text-2xl font-light text-gray-900" id="m-numero"></h3>
@@ -467,43 +471,7 @@ body {
         
         <!-- Información del huésped si está ocupada -->
         <div id="m-huesped-info" class="hidden mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div class="flex items-start gap-3 mb-3">
-                    <div class="flex items-center justify-center text-blue-600 dark:text-blue-400" style="min-width: 40px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-base font-bold text-blue-900 dark:text-blue-300" id="m-huesped-nombre"></p>
-                        <p class="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                            <i class="fas fa-id-card mr-1"></i>CI/Pasaporte: <strong id="m-huesped-ci"></strong>
-                        </p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-                    <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Género</p>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white" id="m-huesped-genero"></p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Edad</p>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white"><span id="m-huesped-edad"></span> años</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Días de estadía</p>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white"><span id="m-huesped-dias"></span> días</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Check-in</p>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white" id="m-huesped-checkin"></p>
-                    </div>
-                </div>
-                <div class="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Nacionalidad</p>
-                    <p class="text-sm font-semibold text-gray-900 dark:text-white" id="m-huesped-nacionalidad"></p>
-                </div>
-            </div>
+            <!-- Este contenido se generará dinámicamente con JavaScript -->
         </div>
         
         <form method="POST" class="space-y-2"  id="form-cambiar-estado">
@@ -589,26 +557,96 @@ function openModal(room, mantenimiento = null, huesped = null) {
         
         // Verificar si hay múltiples huéspedes
         if (huesped.multiples && huesped.huespedes) {
-            // Hay múltiples huéspedes
+            // Hay múltiples huéspedes - mostrar lista
             const numHuespedes = huesped.huespedes.length;
-            const primerHuesped = huesped.huespedes[0];
+            let htmlContent = `
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <p class="text-base font-bold text-blue-900 dark:text-blue-300">${numHuespedes} Huéspedes en esta habitación</p>
+                    </div>
+                    <div class="mb-3 pb-3 border-b border-blue-200 dark:border-blue-700">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Estadía</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">${huesped.nro_dias} días • Check-in: ${new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO')}</p>
+                    </div>
+                    <div class="space-y-3">`;
             
-            document.getElementById('m-huesped-nombre').textContent = `${numHuespedes} Huéspedes`;
-            document.getElementById('m-huesped-ci').textContent = huesped.huespedes.map(h => h.nombres_apellidos).join(', ');
-            document.getElementById('m-huesped-genero').textContent = '-';
-            document.getElementById('m-huesped-edad').textContent = '-';
-            document.getElementById('m-huesped-dias').textContent = huesped.nro_dias;
-            document.getElementById('m-huesped-checkin').textContent = new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO');
-            document.getElementById('m-huesped-nacionalidad').textContent = huesped.huespedes.map(h => h.nacionalidad).join(', ');
+            // Agregar cada huésped
+            huesped.huespedes.forEach((h, index) => {
+                htmlContent += `
+                        <div class="bg-white dark:bg-gray-800 rounded-lg p-3 ${index > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                                <span class="inline-block w-5 h-5 bg-blue-500 text-white text-xs rounded-full text-center leading-5 mr-2">${index + 1}</span>
+                                ${h.nombres_apellidos}
+                            </p>
+                            <div class="grid grid-cols-2 gap-2 text-xs ml-7">
+                                <div>
+                                    <span class="text-gray-500">CI/Pasaporte:</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white">${h.ci_pasaporte}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Género:</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white">${h.genero === 'M' ? 'Masculino' : 'Femenino'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Edad:</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white">${h.edad} años</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Nacionalidad:</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white">${h.nacionalidad}</span>
+                                </div>
+                            </div>
+                        </div>`;
+            });
+            
+            htmlContent += `
+                    </div>
+                </div>`;
+            
+            huespedInfo.innerHTML = htmlContent;
         } else {
-            // Un solo huésped
-            document.getElementById('m-huesped-nombre').textContent = huesped.nombres_apellidos;
-            document.getElementById('m-huesped-ci').textContent = huesped.ci_pasaporte;
-            document.getElementById('m-huesped-genero').textContent = huesped.genero === 'M' ? 'Masculino' : 'Femenino';
-            document.getElementById('m-huesped-edad').textContent = huesped.edad;
-            document.getElementById('m-huesped-dias').textContent = huesped.nro_dias;
-            document.getElementById('m-huesped-checkin').textContent = new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO');
-            document.getElementById('m-huesped-nacionalidad').textContent = huesped.nacionalidad;
+            // Un solo huésped - mostrar diseño tradicional
+            huespedInfo.innerHTML = `
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="flex items-center justify-center text-blue-600 dark:text-blue-400" style="min-width: 40px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-base font-bold text-blue-900 dark:text-blue-300">${huesped.nombres_apellidos}</p>
+                            <p class="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                                <i class="fas fa-id-card mr-1"></i>CI/Pasaporte: <strong>${huesped.ci_pasaporte}</strong>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Género</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">${huesped.genero === 'M' ? 'Masculino' : 'Femenino'}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Edad</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">${huesped.edad} años</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Días de estadía</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">${huesped.nro_dias} días</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Check-in</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">${new Date(huesped.fecha_ingreso).toLocaleDateString('es-BO')}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Nacionalidad</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">${huesped.nacionalidad}</p>
+                    </div>
+                </div>`;
         }
     } else {
         huespedInfo.classList.add('hidden');

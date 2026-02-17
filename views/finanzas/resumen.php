@@ -596,7 +596,7 @@ include __DIR__ . '/../../includes/header.php';
             <div class="text-right text-xs text-gray-600 dark:text-gray-400">
                 <p><strong>Período:</strong> <?php echo formatDate($fecha_inicio); ?> - <?php echo formatDate($fecha_fin); ?></p>
                 <p><strong>Emitido:</strong> <?php echo date('d/m/Y H:i'); ?></p>
-                <p><strong>Recepcionista:</strong> Isaac Vargas</p>
+                <p><strong>Recepcionista:</strong> Gabriel Durán Amadeo</p>
             </div>
         </div>
     </div>

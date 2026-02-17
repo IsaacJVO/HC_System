@@ -11,10 +11,12 @@ $mantenimientos = $mantenimientoModel->obtenerActivos();
 class MYPDF extends TCPDF {
     // Encabezado personalizado
     public function Header() {
-        // Logo (si existe)
-        $logo_path = __DIR__ . '/../../assets/img/logo.png';
-        if (file_exists($logo_path)) {
-            $this->Image($logo_path, 15, 10, 25, '', 'PNG', '', 'T', false, 300, '', false, false, 0, false, false, false);
+        // Logo (solo si GD está disponible para evitar errores)
+        if (extension_loaded('gd') || extension_loaded('imagick')) {
+            $logo_path = __DIR__ . '/../../assets/img/logo.png';
+            if (file_exists($logo_path)) {
+                $this->Image($logo_path, 15, 10, 25, '', 'PNG', '', 'T', false, 300, '', false, false, 0, false, false, false);
+            }
         }
         
         // Fuente del encabezado
