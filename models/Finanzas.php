@@ -1,17 +1,25 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/TurnoRecepcionista.php';
 
 class Finanzas {
     private $conn;
+    private $turnoModel;
     
     public function __construct() {
         $this->conn = getConnection();
+        $this->turnoModel = new TurnoRecepcionista();
     }
     
     // INGRESOS
     public function registrarIngreso($datos) {
-        $sql = "INSERT INTO ingresos (ocupacion_id, concepto, monto, metodo_pago, fecha, hora, observaciones)
-                VALUES (:ocupacion_id, :concepto, :monto, :metodo_pago, :fecha, :hora, :observaciones)";
+        // Obtener recepcionista de sesión o especificado
+        if (!isset($datos['recepcionista'])) {
+            $datos['recepcionista'] = $_SESSION['recepcionista_actual'] ?? $_SESSION['usuario'] ?? 'Sistema';
+        }
+        
+        $sql = "INSERT INTO ingresos (ocupacion_id, concepto, monto, metodo_pago, fecha, hora, observaciones, recepcionista)
+                VALUES (:ocupacion_id, :concepto, :monto, :metodo_pago, :fecha, :hora, :observaciones, :recepcionista)";
         
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
@@ -21,7 +29,8 @@ class Finanzas {
             ':metodo_pago' => $datos['metodo_pago'],
             ':fecha' => $datos['fecha'],
             ':hora' => $datos['hora'] ?? date('H:i:s'),
-            ':observaciones' => $datos['observaciones'] ?? null
+            ':observaciones' => $datos['observaciones'] ?? null,
+            ':recepcionista' => $datos['recepcionista']
         ]);
     }
     
@@ -51,8 +60,13 @@ class Finanzas {
     
     // EGRESOS
     public function registrarEgreso($datos) {
-        $sql = "INSERT INTO egresos (concepto, monto, categoria, fecha, hora, observaciones)
-                VALUES (:concepto, :monto, :categoria, :fecha, :hora, :observaciones)";
+        // Obtener recepcionista de sesión o especificado
+        if (!isset($datos['recepcionista'])) {
+            $datos['recepcionista'] = $_SESSION['recepcionista_actual'] ?? $_SESSION['usuario'] ?? 'Sistema';
+        }
+        
+        $sql = "INSERT INTO egresos (concepto, monto, categoria, fecha, hora, observaciones, recepcionista)
+                VALUES (:concepto, :monto, :categoria, :fecha, :hora, :observaciones, :recepcionista)";
         
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
@@ -61,7 +75,8 @@ class Finanzas {
             ':categoria' => $datos['categoria'] ?? null,
             ':fecha' => $datos['fecha'],
             ':hora' => $datos['hora'] ?? date('H:i:s'),
-            ':observaciones' => $datos['observaciones'] ?? null
+            ':observaciones' => $datos['observaciones'] ?? null,
+            ':recepcionista' => $datos['recepcionista']
         ]);
     }
     
@@ -87,8 +102,16 @@ class Finanzas {
     
     // PAGOS QR
     public function registrarPagoQR($datos) {
-        $sql = "INSERT INTO pagos_qr (ocupacion_id, monto, fecha, hora, numero_transaccion, observaciones)
-                VALUES (:ocupacion_id, :monto, :fecha, :hora, :numero_transaccion, :observaciones)";
+        // Obtener recepcionista de sesión o especificado
+        if (!isset($datos['recepcionista'])) {
+            $datos['recepcionista'] = $_SESSION['recepcionista_actual'] ?? $_SESSION['usuario'] ?? 'Sistema';
+        }
+        
+        $sql = "INSERT INTO pagos_qr (ocupacion_id, monto, fecha, hora, numero_transaccion, observaciones, concepto, tipo, recepcionista)
+                VALUES (:ocupacion_id, :monto, :fecha, :hora, :numero_transaccion, :observaciones, :concepto, :tipo, :recepcionista)";
+        
+        // Determinar tipo automáticamente si no se especifica
+        $tipo = $datos['tipo'] ?? ($datos['ocupacion_id'] ? 'huesped' : 'externo');
         
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([
@@ -97,7 +120,10 @@ class Finanzas {
             ':fecha' => $datos['fecha'],
             ':hora' => $datos['hora'] ?? date('H:i:s'),
             ':numero_transaccion' => $datos['numero_transaccion'] ?? null,
-            ':observaciones' => $datos['observaciones'] ?? null
+            ':observaciones' => $datos['observaciones'] ?? null,
+            ':concepto' => $datos['concepto'] ?? null,
+            ':tipo' => $tipo,
+            ':recepcionista' => $datos['recepcionista']
         ]);
     }
     
@@ -123,6 +149,24 @@ class Finanzas {
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+    
+    /**
+     * Obtener el total de pagos QR en un rango de fechas
+     * Útil para el cierre de caja
+     */
+    public function obtenerTotalPagosQR($fecha_inicio, $fecha_fin) {
+        $sql = "SELECT COALESCE(SUM(monto), 0) as total
+                FROM pagos_qr
+                WHERE fecha >= :fecha_inicio AND fecha <= :fecha_fin";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':fecha_inicio' => $fecha_inicio,
+            ':fecha_fin' => $fecha_fin
+        ]);
+        $result = $stmt->fetch();
+        return $result['total'];
     }
     
     // EDICIÓN Y GESTIÓN DE INGRESOS

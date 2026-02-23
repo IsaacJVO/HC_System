@@ -14,15 +14,35 @@ $tipo_mensaje = '';
 
 $cierreModel = new CierreCaja();
 
+// Procesar apertura de caja
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['abrir_caja'])) {
+    try {
+        $recepcionista = clean_input($_POST['recepcionista']);
+        $_SESSION['recepcionista_actual'] = $recepcionista;
+        $_SESSION['caja_abierta_fecha'] = date('Y-m-d H:i:s');
+        
+        $mensaje = 'Caja abierta para ' . htmlspecialchars($recepcionista) . '. Puedes empezar a trabajar.';
+        $tipo_mensaje = 'success';
+    } catch (Exception $e) {
+        $mensaje = 'Error: ' . $e->getMessage();
+        $tipo_mensaje = 'danger';
+    }
+}
+
 // Procesar cierre de caja
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cerrar_caja'])) {
     try {
         $observaciones = !empty($_POST['observaciones']) ? clean_input($_POST['observaciones']) : null;
+        $recepcionista = $_SESSION['recepcionista_actual'] ?? 'Sistema';
         
-        $cierre_id = $cierreModel->registrarCierre($observaciones);
+        $cierre_id = $cierreModel->registrarCierre($observaciones, $recepcionista);
         
         if ($cierre_id) {
-            $mensaje = 'Caja cerrada exitosamente. Rendición de cuentas registrada. ID del cierre: ' . $cierre_id;
+            // Limpiar sesión
+            unset($_SESSION['recepcionista_actual']);
+            unset($_SESSION['caja_abierta_fecha']);
+            
+            $mensaje = '¡Caja cerrada exitosamente! Tu rendición ha sido guardada.';
             $tipo_mensaje = 'success';
         } else {
             throw new Exception('Error al cerrar la caja');
@@ -34,8 +54,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cerrar_caja'])) {
     }
 }
 
-// Obtener resumen actual
-$resumen_actual = $cierreModel->calcularResumenActual();
+// Verificar estado de la caja
+$caja_abierta = isset($_SESSION['recepcionista_actual']);
+$recepcionista_actual = $_SESSION['recepcionista_actual'] ?? null;
+$saldo_inicial = $cierreModel->obtenerSaldoInicial();
+
+// Obtener resumen actual solo si hay caja abierta
+if ($caja_abierta) {
+    $resumen_actual = $cierreModel->calcularResumenActual();
+} else {
+    $resumen_actual = null;
+}
 
 // Obtener historial
 $historial = $cierreModel->obtenerHistorial(50);
@@ -65,6 +94,15 @@ include __DIR__ . '/../../includes/header.php';
 
 .stat-card:hover {
     transform: translateY(-2px);
+}
+
+.recepcionista-card > div {
+    transition: all 0.3s ease;
+}
+
+.recepcionista-card:hover > div {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .modal {
@@ -135,183 +173,133 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 <?php endif; ?>
 
-<!-- Resumen Actual de Caja -->
-<div class="glass-card rounded-xl p-6 mb-8">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h2 class="text-2xl font-bold text-noir dark:text-white mb-2">
-                <i class="fas fa-box-open text-blue-600"></i> Caja Actual (Abierta)
+<?php if (!$caja_abierta): ?>
+    <!-- CAJA CERRADA - Formulario para Abrir -->
+    <div class="glass-card rounded-xl p-8 mb-8">
+        <div class="text-center mb-6">
+            <div class="inline-block mb-4">
+                <img 
+                    src="<?php echo BASE_PATH; ?>/assets/img/logo.png" 
+                    alt="Hotel Cecil" 
+                    class="w-32 h-32 object-contain mx-auto drop-shadow-lg"
+                >
+            </div>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                La caja está cerrada
             </h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-                Desde: <span class="font-semibold"><?php echo date('d/m/Y H:i', strtotime($resumen_actual['fecha_apertura'])); ?></span>
-            </p>
+            <?php if ($saldo_inicial > 0): ?>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Saldo inicial disponible: <span class="font-bold text-blue-600">Bs. <?php echo number_format($saldo_inicial, 2); ?></span>
+                </p>
+            <?php else: ?>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Inicia en: <span class="font-bold">Bs. 0.00</span>
+                </p>
+            <?php endif; ?>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold animate-pulse">
-                <i class="fas fa-circle text-xs"></i> Abierta
-            </span>
-        </div>
+
+        <form method="POST" class="max-w-2xl mx-auto" id="formAbrirCaja">
+            <input type="hidden" name="abrir_caja" value="1">
+            <input type="hidden" name="recepcionista" id="recepcionista_seleccionado" required>
+            
+            <div class="mb-6">
+                <label class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">
+                    ¿Quién abre la caja?
+                </label>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Isaac Vargas -->
+                    <div class="recepcionista-card cursor-pointer" onclick="seleccionarRecepcionista('Isaac Vargas', this)">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 text-center">
+                            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+                                IV
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-1">Isaac Vargas</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Recepcionista</p>
+                            <div class="mt-4 hidden checkmark">
+                                <i class="fas fa-check-circle text-3xl text-blue-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gabriel Duran -->
+                    <div class="recepcionista-card cursor-pointer" onclick="seleccionarRecepcionista('Gabriel Duran', this)">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-400 transition-all duration-200 text-center">
+                            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-2xl font-bold">
+                                GD
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-1">Gabriel Duran</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Recepcionista</p>
+                            <div class="mt-4 hidden checkmark">
+                                <i class="fas fa-check-circle text-3xl text-green-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button 
+                type="submit"
+                id="btnAbrirCaja"
+                disabled
+                class="w-full px-6 py-4 bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors cursor-not-allowed"
+            >
+                <i class="fas fa-unlock mr-2"></i> Abrir Mi Caja
+            </button>
+        </form>
     </div>
 
-    <!-- Tarjetas de Estadísticas -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <!-- Efectivo -->
-        <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border-2 border-green-300 dark:border-green-700">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-semibold text-green-700 dark:text-green-300">Efectivo</span>
-                <i class="fas fa-money-bill-wave text-2xl text-green-600"></i>
-            </div>
-            <p class="text-2xl font-bold text-green-800 dark:text-green-200">
-                Bs. <?php echo number_format($resumen_actual['total_efectivo'], 2); ?>
-            </p>
-        </div>
-
-        <!-- QR -->
-        <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 border-2 border-purple-300 dark:border-purple-700">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-semibold text-purple-700 dark:text-purple-300">QR</span>
-                <i class="fas fa-qrcode text-2xl text-purple-600"></i>
-            </div>
-            <p class="text-2xl font-bold text-purple-800 dark:text-purple-200">
-                Bs. <?php echo number_format($resumen_actual['total_qr'], 2); ?>
-            </p>
-        </div>
-
-        <!-- Egresos -->
-        <div class="stat-card bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-xl p-4 border-2 border-red-300 dark:border-red-700">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-semibold text-red-700 dark:text-red-300">Egresos</span>
-                <i class="fas fa-arrow-down text-2xl text-red-600"></i>
-            </div>
-            <p class="text-2xl font-bold text-red-800 dark:text-red-200">
-                Bs. <?php echo number_format($resumen_actual['total_egresos'], 2); ?>
-            </p>
-        </div>
-
-        <!-- Balance -->
-        <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border-2 border-blue-300 dark:border-blue-700">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-semibold text-blue-700 dark:text-blue-300">Balance Efectivo</span>
-                <i class="fas fa-wallet text-2xl text-blue-600"></i>
-            </div>
-            <p class="text-2xl font-bold text-blue-800 dark:text-blue-200">
-                Bs. <?php echo number_format($resumen_actual['balance_efectivo'], 2); ?>
-            </p>
-        </div>
-    </div>
-
-    <!-- Total General -->
-    <div class="bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-900 dark:to-black rounded-xl p-6 mb-6">
-        <div class="flex items-center justify-between">
+<?php else: ?>
+    <!-- CAJA ABIERTA - Resumen Actual -->
+    <div class="glass-card rounded-xl p-6 mb-8">
+        <div class="flex justify-between items-center mb-6">
             <div>
-                <p class="text-sm text-gray-300 mb-1">Balance Total</p>
-                <p class="text-xs text-gray-400">(Efectivo + QR - Egresos)</p>
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    Caja abierta de: <span class="text-blue-600"><?php echo htmlspecialchars($recepcionista_actual); ?></span>
+                </h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Abierta desde: <?php echo date('d/m/Y H:i', strtotime($_SESSION['caja_abierta_fecha'])); ?>
+                </p>
             </div>
-            <p class="text-4xl font-bold text-white">
-                Bs. <?php echo number_format($resumen_actual['balance_total'], 2); ?>
-            </p>
+            <button 
+                onclick="abrirModalCerrarCaja()"
+                class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+            >
+                <i class="fas fa-lock mr-2"></i> Cerrar Mi Caja
+            </button>
+        </div>
+
+        <!-- Resumen de Totales -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                <p class="text-xs text-green-600 dark:text-green-400 mb-1">Ingresos Efectivo</p>
+                <p class="text-xl font-bold text-green-700 dark:text-green-300">
+                    Bs. <?php echo number_format($resumen_actual['total_efectivo'], 2); ?>
+                </p>
+            </div>
+
+            <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                <p class="text-xs text-purple-600 dark:text-purple-400 mb-1">Pagos QR</p>
+                <p class="text-xl font-bold text-purple-700 dark:text-purple-300">
+                    Bs. <?php echo number_format($resumen_actual['total_qr'], 2); ?>
+                </p>
+            </div>
+
+            <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                <p class="text-xs text-red-600 dark:text-red-400 mb-1">Egresos</p>
+                <p class="text-xl font-bold text-red-700 dark:text-red-300">
+                    Bs. <?php echo number_format($resumen_actual['total_egresos'], 2); ?>
+                </p>
+            </div>
+
+            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                <p class="text-xs text-blue-600 dark:text-blue-400 mb-1">Balance Total</p>
+                <p class="text-xl font-bold text-blue-700 dark:text-blue-300">
+                    Bs. <?php echo number_format($resumen_actual['balance_total'], 2); ?>
+                </p>
+            </div>
         </div>
     </div>
-
-    <!-- Botón de Cerrar Caja -->
-    <div class="flex gap-4">
-        <button 
-            onclick="abrirModalCerrarCaja()"
-            class="flex-1 px-6 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-        >
-            <i class="fas fa-lock mr-2"></i> Cerrar Caja y Generar Rendición
-        </button>
-        <button 
-            onclick="verDetalles()"
-            class="px-6 py-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-semibold transition-all duration-200"
-        >
-            <i class="fas fa-list mr-2"></i> Ver Detalles
-        </button>
-    </div>
-</div>
-
-<!-- Detalles (Ocultos por defecto) -->
-<div id="detallesSection" style="display: none;" class="glass-card rounded-xl p-6 mb-8">
-    <h3 class="text-xl font-bold text-noir dark:text-white mb-4">
-        <i class="fas fa-info-circle text-blue-600"></i> Detalles de Movimientos
-    </h3>
-    
-    <!-- Ingresos -->
-    <div class="mb-6">
-        <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-            <i class="fas fa-arrow-up text-green-600"></i> Ingresos (<?php echo count($resumen_actual['detalles_ingresos']); ?>)
-        </h4>
-        <?php if (!empty($resumen_actual['detalles_ingresos'])): ?>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-100 dark:bg-gray-800">
-                        <tr>
-                            <th class="px-3 py-2 text-left">Fecha</th>
-                            <th class="px-3 py-2 text-left">Concepto</th>
-                            <th class="px-3 py-2 text-left">Método</th>
-                            <th class="px-3 py-2 text-right">Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <?php foreach ($resumen_actual['detalles_ingresos'] as $ing): ?>
-                            <tr>
-                                <td class="px-3 py-2"><?php echo date('d/m/Y', strtotime($ing['fecha'])); ?></td>
-                                <td class="px-3 py-2"><?php echo htmlspecialchars($ing['concepto']); ?></td>
-                                <td class="px-3 py-2">
-                                    <span class="px-2 py-1 rounded text-xs font-semibold <?php 
-                                        echo $ing['metodo_pago'] === 'efectivo' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800';
-                                    ?>">
-                                        <?php echo strtoupper($ing['metodo_pago']); ?>
-                                    </span>
-                                </td>
-                                <td class="px-3 py-2 text-right font-semibold text-green-600">
-                                    Bs. <?php echo number_format($ing['monto'], 2); ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php else: ?>
-            <p class="text-gray-500 text-center py-4">No hay ingresos en este período</p>
-        <?php endif; ?>
-    </div>
-
-    <!-- Egresos -->
-    <div>
-        <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-            <i class="fas fa-arrow-down text-red-600"></i> Egresos (<?php echo count($resumen_actual['detalles_egresos']); ?>)
-        </h4>
-        <?php if (!empty($resumen_actual['detalles_egresos'])): ?>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-100 dark:bg-gray-800">
-                        <tr>
-                            <th class="px-3 py-2 text-left">Fecha</th>
-                            <th class="px-3 py-2 text-left">Concepto</th>
-                            <th class="px-3 py-2 text-left">Categoría</th>
-                            <th class="px-3 py-2 text-right">Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <?php foreach ($resumen_actual['detalles_egresos'] as $egr): ?>
-                            <tr>
-                                <td class="px-3 py-2"><?php echo date('d/m/Y', strtotime($egr['fecha'])); ?></td>
-                                <td class="px-3 py-2"><?php echo htmlspecialchars($egr['concepto']); ?></td>
-                                <td class="px-3 py-2"><?php echo htmlspecialchars($egr['categoria'] ?? '-'); ?></td>
-                                <td class="px-3 py-2 text-right font-semibold text-red-600">
-                                    Bs. <?php echo number_format($egr['monto'], 2); ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php else: ?>
-            <p class="text-gray-500 text-center py-4">No hay egresos en este período</p>
-        <?php endif; ?>
-    </div>
-</div>
+<?php endif; ?>
 
 <!-- Historial de Cierres -->
 <div class="glass-card rounded-xl p-6">
@@ -336,7 +324,7 @@ include __DIR__ . '/../../includes/header.php';
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">ID</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Período</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Usuario</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Recepcionista</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Efectivo</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">QR</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Balance</th>
@@ -358,7 +346,7 @@ include __DIR__ . '/../../includes/header.php';
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                                <?php echo htmlspecialchars($cierre['usuario_nombre']); ?>
+                                <span class="font-semibold"><?php echo htmlspecialchars($cierre['recepcionista'] ?? 'Sistema'); ?></span>
                             </td>
                             <td class="px-4 py-3 text-sm text-right font-semibold text-green-600">
                                 Bs. <?php echo number_format($cierre['total_efectivo'], 2); ?>
@@ -387,56 +375,36 @@ include __DIR__ . '/../../includes/header.php';
     <?php endif; ?>
 </div>
 
-<!-- Modal de Cerrar Caja -->
+<!-- Modal de Cerrar Caja (solo si hay caja abierta) -->
+<?php if ($caja_abierta): ?>
 <div id="modalCerrarCaja" class="modal">
     <div class="modal-content">
-        <h2 class="text-2xl font-bold text-noir mb-4">
-            <i class="fas fa-exclamation-triangle text-orange-600"></i> Confirmar Cierre de Caja
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+            <i class="fas fa-lock text-red-600"></i> Cerrar Mi Caja
         </h2>
         
-        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
-            <p class="text-sm text-yellow-800">
-                <strong>⚠️ Importante:</strong> Al cerrar la caja, se registrará una rendición de cuentas con los datos actuales. 
-                Después del cierre, se abrirá automáticamente una nueva caja que empezará a acumular los nuevos movimientos.
+        <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6">
+            <p class="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Recepcionista:</strong> <?php echo htmlspecialchars($recepcionista_actual); ?><br>
+                <strong>Balance en efectivo que dejas:</strong> <span class="text-lg font-bold">Bs. <?php echo number_format($resumen_actual['balance_efectivo'], 2); ?></span>
+            </p>
+            <p class="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                Este monto será el saldo inicial para el próximo recepcionista.
             </p>
         </div>
 
         <form method="POST" id="formCerrarCaja">
             <input type="hidden" name="cerrar_caja" value="1">
-            
-            <!-- Resumen -->
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Resumen a cerrar:</h3>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Efectivo:</span>
-                        <span class="font-semibold text-green-600">Bs. <?php echo number_format($resumen_actual['total_efectivo'], 2); ?></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">QR:</span>
-                        <span class="font-semibold text-purple-600">Bs. <?php echo number_format($resumen_actual['total_qr'], 2); ?></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Egresos:</span>
-                        <span class="font-semibold text-red-600">Bs. <?php echo number_format($resumen_actual['total_egresos'], 2); ?></span>
-                    </div>
-                    <div class="border-t border-gray-300 dark:border-gray-600 my-2"></div>
-                    <div class="flex justify-between">
-                        <span class="font-semibold text-gray-800 dark:text-gray-200">Balance Total:</span>
-                        <span class="font-bold text-blue-600 text-lg">Bs. <?php echo number_format($resumen_actual['balance_total'], 2); ?></span>
-                    </div>
-                </div>
-            </div>
 
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Observaciones (Opcional):
                 </label>
                 <textarea 
                     name="observaciones" 
                     rows="3"
                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200"
-                    placeholder="Ej: Rendición semanal, efectivo entregado al dueño, etc."
+                    placeholder="Ej: Entregado al dueño, deposité Bs. 1000, etc."
                 ></textarea>
             </div>
             
@@ -445,12 +413,12 @@ include __DIR__ . '/../../includes/header.php';
                     type="submit"
                     class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
                 >
-                    <i class="fas fa-lock"></i> Confirmar y Cerrar Caja
+                    <i class="fas fa-lock mr-2"></i> Confirmar y Cerrar Caja
                 </button>
                 <button 
                     type="button"
                     onclick="cerrarModal()"
-                    class="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-semibold transition-colors"
+                    class="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors"
                 >
                     Cancelar
                 </button>
@@ -458,6 +426,7 @@ include __DIR__ . '/../../includes/header.php';
         </form>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 function abrirModalCerrarCaja() {
@@ -468,13 +437,38 @@ function cerrarModal() {
     document.getElementById('modalCerrarCaja').style.display = 'none';
 }
 
-function verDetalles() {
-    const detallesSection = document.getElementById('detallesSection');
-    if (detallesSection.style.display === 'none') {
-        detallesSection.style.display = 'block';
+// Seleccionar recepcionista (con tarjetas)
+function seleccionarRecepcionista(nombre, cardElement) {
+    // Remover selección previa
+    document.querySelectorAll('.recepcionista-card > div').forEach(card => {
+        card.classList.remove('border-blue-500', 'border-green-500', 'border-4');
+        card.classList.add('border-2', 'border-gray-200');
+    });
+    document.querySelectorAll('.checkmark').forEach(check => {
+        check.classList.add('hidden');
+    });
+    
+    // Marcar como seleccionado
+    const innerDiv = cardElement.querySelector('div');
+    innerDiv.classList.remove('border-2', 'border-gray-200');
+    innerDiv.classList.add('border-4');
+    
+    if (nombre === 'Isaac Vargas') {
+        innerDiv.classList.add('border-blue-500');
     } else {
-        detallesSection.style.display = 'none';
+        innerDiv.classList.add('border-green-500');
     }
+    
+    cardElement.querySelector('.checkmark').classList.remove('hidden');
+    
+    // Guardar valor
+    document.getElementById('recepcionista_seleccionado').value = nombre;
+    
+    // Habilitar botón
+    const btn = document.getElementById('btnAbrirCaja');
+    btn.disabled = false;
+    btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+    btn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
 }
 
 // Cerrar modal al hacer clic fuera de él

@@ -68,7 +68,7 @@ class RegistroOcupacion {
     public function obtenerRecientementeFinalizados($horas = 48) {
         $fecha_limite = date('Y-m-d H:i:s', strtotime("-$horas hours"));
         
-        $sql = "SELECT ro.*, h.nombres_apellidos, h.ci_pasaporte, h.genero, h.edad, 
+        $sql = "SELECT ro.*, ro.huesped_id, h.nombres_apellidos, h.ci_pasaporte, h.genero, h.edad, 
                 h.estado_civil, h.nacionalidad, h.profesion, h.objeto, h.procedencia,
                 hab.numero as numero_habitacion
                 FROM registro_ocupacion ro
@@ -113,8 +113,27 @@ class RegistroOcupacion {
         if ($result && $cambiar_estado) {
             $ocupacion = $this->obtenerPorId($id);
             if ($ocupacion) {
-                // Por defecto, pasar a "limpieza" en lugar de "disponible"
-                $this->actualizarEstadoHabitacion($ocupacion['habitacion_id'], 'limpieza');
+                // Verificar si hay otros huéspedes activos en la misma habitación
+                $sql = "SELECT COUNT(*) as total FROM registro_ocupacion 
+                        WHERE habitacion_id = :habitacion_id 
+                        AND estado = 'activo' 
+                        AND id != :id_actual";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([
+                    ':habitacion_id' => $ocupacion['habitacion_id'],
+                    ':id_actual' => $id
+                ]);
+                $otros_huespedes = $stmt->fetch();
+                
+                // Si hay otros huéspedes activos, mantener habitación "ocupada"
+                // Si no hay más huéspedes activos, cambiar a "limpieza"
+                if ($otros_huespedes['total'] > 0) {
+                    // Mantener como ocupada porque hay más huéspedes
+                    $this->actualizarEstadoHabitacion($ocupacion['habitacion_id'], 'ocupada');
+                } else {
+                    // Cambiar a limpieza porque ya no hay huéspedes activos
+                    $this->actualizarEstadoHabitacion($ocupacion['habitacion_id'], 'limpieza');
+                }
             }
         }
         
@@ -180,10 +199,9 @@ class RegistroOcupacion {
             
             foreach ($ocupaciones_vencidas as $ocupacion) {
                 // Finalizar la ocupación
-                $this->finalizarOcupacion($ocupacion['id'], date('Y-m-d'));
-                
-                // Cambiar habitación a "limpieza" en lugar de "disponible"
-                $this->actualizarEstadoHabitacion($ocupacion['habitacion_id'], 'limpieza');
+                // finalizarOcupacion() ya se encarga de verificar si hay otros huéspedes
+                // y cambiar el estado apropiadamente (ocupada o limpieza)
+                $this->finalizarOcupacion($ocupacion['id'], date('Y-m-d'), true);
             }
             
             return count($ocupaciones_vencidas);
@@ -223,15 +241,107 @@ class RegistroOcupacion {
     }
     
     /**
-     * Extender la estadía de una ocupación existente
-     * Actualiza fecha_salida_estimada, nro_dias y reactiva si está finalizado
+     * Obtener todos los huéspedes activos de una habitación
      */
-    public function extenderEstadia($ocupacion_id, $dias_adicionales) {
+    public function obtenerHuespedesActivosPorHabitacion($habitacion_id) {
+        try {
+            $sql = "SELECT ro.*, h.nombres_apellidos, h.ci_pasaporte, h.genero, h.edad, 
+                    hab.numero, hab.precio_dia
+                    FROM registro_ocupacion ro
+                    INNER JOIN huespedes h ON ro.huesped_id = h.id
+                    INNER JOIN habitaciones hab ON ro.habitacion_id = hab.id
+                    WHERE ro.habitacion_id = :habitacion_id 
+                    AND ro.estado = 'activo'
+                    ORDER BY ro.fecha_ingreso ASC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':habitacion_id' => $habitacion_id]);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Error en obtenerHuespedesActivosPorHabitacion: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Extender la estadía de UNA HABITACIÓN (todos los huéspedes)
+     * Actualiza fecha_salida_estimada, nro_dias y reactiva si está finalizado
+     * TODOS los huéspedes de la habitación se extienden juntos
+     */
+    public function extenderEstadiaHabitacion($habitacion_id, $dias_adicionales) {
         try {
             $this->conn->beginTransaction();
             
-            // Obtener el registro actual
-            $sql = "SELECT * FROM registro_ocupacion WHERE id = :id";
+            // Obtener TODOS los registros activos O finalizados recientes de esta habitación
+            $sql = "SELECT * FROM registro_ocupacion 
+                    WHERE habitacion_id = :habitacion_id 
+                    AND (estado = 'activo' OR 
+                         (estado = 'finalizado' AND fecha_salida_real >= DATE_SUB(NOW(), INTERVAL 48 HOUR)))
+                    ORDER BY fecha_ingreso ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':habitacion_id' => $habitacion_id]);
+            $ocupaciones = $stmt->fetchAll();
+            
+            if (empty($ocupaciones)) {
+                throw new Exception("No hay huéspedes en esta habitación para extender");
+            }
+            
+            // Usar la fecha de salida del primer registro (todos deberían tener la misma)
+            $fecha_salida_actual = $ocupaciones[0]['fecha_salida_estimada'];
+            $nueva_fecha_salida = date('Y-m-d', strtotime($fecha_salida_actual . " +$dias_adicionales days"));
+            
+            // Actualizar TODOS los registros de la habitación (activos y finalizados recientes)
+            $sql = "UPDATE registro_ocupacion 
+                    SET nro_dias = nro_dias + :dias_adicionales,
+                        fecha_salida_estimada = :fecha_salida_estimada,
+                        estado = 'activo',
+                        fecha_salida_real = NULL
+                    WHERE habitacion_id = :habitacion_id 
+                    AND (estado = 'activo' OR 
+                         (estado = 'finalizado' AND fecha_salida_real >= DATE_SUB(NOW(), INTERVAL 48 HOUR)))";
+            
+            $stmt = $this->conn->prepare($sql);
+            $result = $stmt->execute([
+                ':dias_adicionales' => $dias_adicionales,
+                ':fecha_salida_estimada' => $nueva_fecha_salida,
+                ':habitacion_id' => $habitacion_id
+            ]);
+            
+            if ($result) {
+                // Asegurar que la habitación esté en estado 'ocupada'
+                $this->actualizarEstadoHabitacion($habitacion_id, 'ocupada');
+                
+                $this->conn->commit();
+                
+                $nuevo_total_dias = $ocupaciones[0]['nro_dias'] + $dias_adicionales;
+                $huespedes_actualizados = count($ocupaciones);
+                
+                return [
+                    'success' => true,
+                    'nueva_fecha_salida' => $nueva_fecha_salida,
+                    'total_dias' => $nuevo_total_dias,
+                    'huespedes_actualizados' => $huespedes_actualizados
+                ];
+            }
+            
+            $this->conn->rollBack();
+            return ['success' => false, 'error' => 'No se pudo actualizar los registros'];
+            
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            error_log("Error en extenderEstadiaHabitacion: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+    
+    /**
+     * @deprecated Use extenderEstadiaHabitacion() en su lugar
+     * Mantener por compatibilidad, pero redirige al nuevo método
+     */
+    public function extenderEstadia($ocupacion_id, $dias_adicionales) {
+        try {
+            // Obtener la habitación de esta ocupación
+            $sql = "SELECT habitacion_id FROM registro_ocupacion WHERE id = :id";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([':id' => $ocupacion_id]);
             $ocupacion = $stmt->fetch();
@@ -240,43 +350,10 @@ class RegistroOcupacion {
                 throw new Exception("Ocupación no encontrada");
             }
             
-            // Calcular nueva fecha de salida y total de días
-            $fecha_salida_actual = $ocupacion['fecha_salida_estimada'];
-            $nueva_fecha_salida = date('Y-m-d', strtotime($fecha_salida_actual . " +$dias_adicionales days"));
-            $nuevo_total_dias = $ocupacion['nro_dias'] + $dias_adicionales;
-            
-            // Actualizar el registro
-            $sql = "UPDATE registro_ocupacion 
-                    SET nro_dias = :nro_dias,
-                        fecha_salida_estimada = :fecha_salida_estimada,
-                        estado = 'activo',
-                        fecha_salida_real = NULL
-                    WHERE id = :id";
-            
-            $stmt = $this->conn->prepare($sql);
-            $result = $stmt->execute([
-                ':nro_dias' => $nuevo_total_dias,
-                ':fecha_salida_estimada' => $nueva_fecha_salida,
-                ':id' => $ocupacion_id
-            ]);
-            
-            if ($result) {
-                // Asegurar que la habitación esté en estado 'ocupada'
-                $this->actualizarEstadoHabitacion($ocupacion['habitacion_id'], 'ocupada');
-                
-                $this->conn->commit();
-                return [
-                    'success' => true,
-                    'nueva_fecha_salida' => $nueva_fecha_salida,
-                    'total_dias' => $nuevo_total_dias
-                ];
-            }
-            
-            $this->conn->rollBack();
-            return ['success' => false, 'error' => 'No se pudo actualizar el registro'];
+            // Usar el nuevo método que extiende toda la habitación
+            return $this->extenderEstadiaHabitacion($ocupacion['habitacion_id'], $dias_adicionales);
             
         } catch (Exception $e) {
-            $this->conn->rollBack();
             error_log("Error en extenderEstadia: " . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }

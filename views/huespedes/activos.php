@@ -152,7 +152,7 @@ include __DIR__ . '/../../includes/header.php';
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hab.</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Salida</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estadía</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acción</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -183,15 +183,22 @@ include __DIR__ . '/../../includes/header.php';
                                 <?php echo date('d/m/Y', strtotime($ocu['fecha_ingreso'])); ?> - <?php echo date('d/m/Y', strtotime($ocu['fecha_salida_estimada'])); ?>
                                 <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo $ocu['nro_dias']; ?> días</div>
                             </td>
-                            <td class="px-4 py-3 text-center">
-                                <a href="<?php echo BASE_PATH; ?>/views/huespedes/extender_estadia.php?id=<?php echo $ocu['id']; ?>"
-                                   class="inline-block px-3 py-1.5 text-xs font-medium text-white rounded transition-colors"
-                                   style="background-color: #6b7c3e;"
-                                   onmouseover="this.style.backgroundColor='#5a6833'"
-                                   onmouseout="this.style.backgroundColor='#6b7c3e'"
-                                   title="Reactivar y extender estadía">
-                                    Reactivar/Extender
-                                </a>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <a href="<?php echo BASE_PATH; ?>/views/huespedes/editar.php?id=<?php echo $ocu['huesped_id']; ?>"
+                                       class="px-2.5 py-1.5 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 rounded transition-colors"
+                                       title="Editar huésped">
+                                        Editar
+                                    </a>
+                                    <a href="<?php echo BASE_PATH; ?>/views/huespedes/extender_estadia.php?id=<?php echo $ocu['id']; ?>"
+                                       class="px-2.5 py-1.5 text-xs font-medium text-white rounded transition-colors"
+                                       style="background-color: #6b7c3e;"
+                                       onmouseover="this.style.backgroundColor='#5a6833'"
+                                       onmouseout="this.style.backgroundColor='#6b7c3e'"
+                                       title="Reactivar y extender estadía">
+                                        Extender
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

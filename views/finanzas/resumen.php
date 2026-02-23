@@ -8,6 +8,13 @@ $page_title = 'Resumen Financiero';
 $fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
 $fecha_fin = $_GET['fecha_fin'] ?? date('Y-m-d');
 
+// Obtener recepcionista seleccionado
+$recepcionista = $_GET['recepcionista'] ?? 'Isaac Vargas';
+// Si es "otro", usar el valor personalizado
+if ($recepcionista === 'otro' && !empty($_GET['recepcionista_otro'])) {
+    $recepcionista = clean_input($_GET['recepcionista_otro']);
+}
+
 $finanzasModel = new Finanzas();
 $resumen = $finanzasModel->obtenerResumen($fecha_inicio, $fecha_fin);
 $ingresos = $finanzasModel->obtenerIngresos($fecha_inicio, $fecha_fin);
@@ -560,7 +567,7 @@ include __DIR__ . '/../../includes/header.php';
     </div>
     
     <form method="GET" class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="space-y-2">
                 <label class="block text-sm font-semibold text-noir dark:text-white">Fecha Inicio</label>
                 <input type="date" name="fecha_inicio" 
@@ -573,12 +580,40 @@ include __DIR__ . '/../../includes/header.php';
                        value="<?php echo $fecha_fin; ?>"
                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800">
             </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-noir dark:text-white">
+                    <i class="fas fa-user text-gray-500 mr-1"></i>
+                    Recepcionista
+                </label>
+                <select name="recepcionista" id="recepcionista_select"
+                        onchange="toggleRecepcionistaOtro()"
+                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800">
+                    <option value="Isaac Vargas" <?php echo ($recepcionista === 'Isaac Vargas') ? 'selected' : ''; ?>>Isaac Vargas</option>
+                    <option value="Gabriel Duran" <?php echo ($recepcionista === 'Gabriel Duran') ? 'selected' : ''; ?>>Gabriel Duran</option>
+                    <option value="otro" <?php echo (!in_array($recepcionista, ['Isaac Vargas', 'Gabriel Duran'])) ? 'selected' : ''; ?>>Otro (escribir nombre)</option>
+                </select>
+            </div>
             <div class="flex items-end">
                 <button type="submit" 
                         class="w-full px-6 py-3.5 bg-gray-900 dark:bg-gray-700 text-white font-semibold rounded-xl hover:bg-gray-800 dark:hover:bg-gray-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
                     Actualizar Resumen
                 </button>
             </div>
+        </div>
+        
+        <!-- Campo de texto para "Otro recepcionista" -->
+        <div id="recepcionista_otro_div" class="mt-4" style="display: <?php echo (!in_array($recepcionista, ['Isaac Vargas', 'Gabriel Duran'])) ? 'block' : 'none'; ?>;">
+            <label class="block text-sm font-semibold text-noir dark:text-white mb-2">
+                <i class="fas fa-pencil-alt text-gray-500 mr-1"></i>
+                Nombre del Recepcionista
+            </label>
+            <input type="text" 
+                   name="recepcionista_otro" 
+                   id="recepcionista_otro_input"
+                   value="<?php echo (!in_array($recepcionista, ['Isaac Vargas', 'Gabriel Duran'])) ? htmlspecialchars($recepcionista) : ''; ?>"
+                   placeholder="Ej: María López"
+                   class="w-full md:w-1/2 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa el nombre completo del recepcionista</p>
         </div>
     </form>
 </div>
@@ -596,7 +631,7 @@ include __DIR__ . '/../../includes/header.php';
             <div class="text-right text-xs text-gray-600 dark:text-gray-400">
                 <p><strong>Período:</strong> <?php echo formatDate($fecha_inicio); ?> - <?php echo formatDate($fecha_fin); ?></p>
                 <p><strong>Emitido:</strong> <?php echo date('d/m/Y H:i'); ?></p>
-                <p><strong>Recepcionista:</strong> Gabriel Durán Amadeo</p>
+                <p><strong>Recepcionista:</strong> <?php echo htmlspecialchars($recepcionista); ?></p>
             </div>
         </div>
     </div>
@@ -608,7 +643,7 @@ include __DIR__ . '/../../includes/header.php';
                 <td style="width: 70%; vertical-align: top; border: none;">
                     <div style="font-size: 16pt; font-weight: bold; margin-bottom: 0.1cm;">HOTEL CECIL</div>
                     <div style="font-size: 11pt; font-weight: 600; margin-bottom: 0.1cm;">INFORME DE LIQUIDACIÓN DE CAJA</div>
-                    <div style="font-size: 9pt;">Recepcionista: Isaac Vargas</div>
+                    <div style="font-size: 9pt;">Recepcionista: <?php echo htmlspecialchars($recepcionista); ?></div>
                 </td>
                 <td style="width: 30%; vertical-align: top; text-align: right; border: none;">
                     <div style="font-size: 9pt; line-height: 1.4;">
@@ -909,5 +944,27 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+function toggleRecepcionistaOtro() {
+    const selectElement = document.getElementById('recepcionista_select');
+    const otroDiv = document.getElementById('recepcionista_otro_div');
+    const otroInput = document.getElementById('recepcionista_otro_input');
+    
+    if (selectElement.value === 'otro') {
+        otroDiv.style.display = 'block';
+        otroInput.required = true;
+        otroInput.focus();
+    } else {
+        otroDiv.style.display = 'none';
+        otroInput.required = false;
+    }
+}
+
+// Ejecutar al cargar la página por si viene con "otro" seleccionado
+document.addEventListener('DOMContentLoaded', function() {
+    toggleRecepcionistaOtro();
+});
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

@@ -17,15 +17,57 @@ $tipo_mensaje = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar_pago_qr'])) {
     $finanzasModel = new Finanzas();
     
+    $tipo = $_POST['tipo_pago'] ?? 'huesped';
+    
     $datos = [
-        'ocupacion_id' => !empty($_POST['ocupacion_id']) ? $_POST['ocupacion_id'] : null,
+        'ocupacion_id' => ($tipo === 'huesped' && !empty($_POST['ocupacion_id'])) ? $_POST['ocupacion_id'] : null,
         'monto' => floatval($_POST['monto']),
         'fecha' => $_POST['fecha'],
         'numero_transaccion' => clean_input($_POST['numero_transaccion']),
-        'observaciones' => clean_input($_POST['observaciones'])
+        'observaciones' => clean_input($_POST['observaciones']),
+        'concepto' => ($tipo === 'externo') ? clean_input($_POST['concepto']) : null,
+        'tipo' => $tipo
     ];
     
+    // Registrar en tabla pagos_qr
     if ($finanzasModel->registrarPagoQR($datos)) {
+        // También registrar como ingreso para que aparezca en reportes
+        $concepto_ingreso = '';
+        if ($tipo === 'externo') {
+            $concepto_ingreso = 'Cobro QR externo: ' . $datos['concepto'];
+        } else {
+            // Obtener nombre del huésped si existe
+            if ($datos['ocupacion_id']) {
+                $registroModel = new RegistroOcupacion();
+                $sql = "SELECT h.nombres_apellidos, hab.numero 
+                        FROM registro_ocupacion ro 
+                        INNER JOIN huespedes h ON ro.huesped_id = h.id
+                        INNER JOIN habitaciones hab ON ro.habitacion_id = hab.id
+                        WHERE ro.id = :id";
+                $stmt = $registroModel->conn->prepare($sql);
+                $stmt->execute([':id' => $datos['ocupacion_id']]);
+                $ocupacion = $stmt->fetch();
+                if ($ocupacion) {
+                    $concepto_ingreso = 'Pago QR - Hab. ' . $ocupacion['numero'] . ' - ' . $ocupacion['nombres_apellidos'];
+                } else {
+                    $concepto_ingreso = 'Pago QR - Huésped';
+                }
+            } else {
+                $concepto_ingreso = 'Pago QR sin asociar';
+            }
+        }
+        
+        // Registrar ingreso
+        $datos_ingreso = [
+            'concepto' => $concepto_ingreso,
+            'monto' => $datos['monto'],
+            'fecha' => $datos['fecha'],
+            'metodo_pago' => 'qr',
+            'categoria' => $tipo === 'externo' ? 'otros' : 'alojamiento',
+            'ocupacion_id' => $datos['ocupacion_id']
+        ];
+        $finanzasModel->registrarIngreso($datos_ingreso);
+        
         $mensaje = 'Pago QR registrado correctamente. Total: Bs. ' . number_format($datos['monto'], 2);
         $tipo_mensaje = 'success';
         $_POST = []; // Limpiar formulario
@@ -134,8 +176,35 @@ include __DIR__ . '/../../includes/header.php';
             </div>
             
             <form method="POST" action="" class="space-y-3 sm:space-y-4">
-                <!-- Ocupación -->
-                <div>
+                <!-- Tipo de Pago -->
+                <div class="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-3">
+                        Tipo de Cobro
+                    </label>
+                    <div class="flex gap-3">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="tipo_pago" value="huesped" checked 
+                                   class="peer sr-only" 
+                                   onchange="toggleTipoPago()">
+                            <div class="p-3 text-center border-2 border-gray-300 dark:border-gray-600 rounded-lg peer-checked:border-purple-600 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/30 transition-all">
+                                <i class="fas fa-user text-lg mb-1 text-purple-600"></i>
+                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Huésped</p>
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="tipo_pago" value="externo" 
+                                   class="peer sr-only"
+                                   onchange="toggleTipoPago()">
+                            <div class="p-3 text-center border-2 border-gray-300 dark:border-gray-600 rounded-lg peer-checked:border-blue-600 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 transition-all">
+                                <i class="fas fa-shopping-bag text-lg mb-1 text-blue-600"></i>
+                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Externo</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Ocupación (solo visible si es tipo huesped) -->
+                <div id="ocupacion_div">
                     <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
                         Huésped (Opcional)
                     </label>
@@ -148,6 +217,24 @@ include __DIR__ . '/../../includes/header.php';
                         <?php endforeach; ?>
                     </select>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Opcional: vincular pago</p>
+                </div>
+
+                <!-- Concepto (solo visible si es tipo externo) -->
+                <div id="concepto_div" style="display: none;">
+                    <label class="block text-xs sm:text-sm font-semibold text-noir dark:text-white mb-1.5 sm:mb-2">
+                        Concepto del Cobro <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="concepto"
+                        id="concepto_input"
+                        placeholder="Ej: Venta de productos, Servicio de lavandería, etc."
+                        class="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-noir dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400"
+                    >
+                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Describe el motivo del cobro externo
+                    </p>
                 </div>
                 
                 <!-- Monto -->
@@ -266,7 +353,8 @@ include __DIR__ . '/../../includes/header.php';
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Huésped</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Tipo</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Concepto/Huésped</th>
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Nro Transacción</th>
                             <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Monto</th>
                         </tr>
@@ -276,18 +364,35 @@ include __DIR__ . '/../../includes/header.php';
                         $total = 0;
                         foreach ($pagos_qr as $pqr): 
                             $total += $pqr['monto'];
+                            $es_externo = ($pqr['tipo'] ?? 'huesped') === 'externo';
                         ?>
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                                     <?php echo date('d/m/Y', strtotime($pqr['fecha'])); ?>
                                 </td>
+                                <td class="py-3 px-4 text-sm">
+                                    <?php if ($es_externo): ?>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                            <i class="fas fa-shopping-bag mr-1"></i> Externo
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                            <i class="fas fa-user mr-1"></i> Huésped
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                                     <?php 
-                                    if ($pqr['nombres_apellidos']) {
+                                    if ($es_externo && !empty($pqr['concepto'])) {
+                                        echo '<span class="font-medium">' . htmlspecialchars($pqr['concepto']) . '</span>';
+                                        if (!empty($pqr['observaciones'])) {
+                                            echo '<br><span class="text-xs text-gray-500 dark:text-gray-400">' . htmlspecialchars($pqr['observaciones']) . '</span>';
+                                        }
+                                    } elseif ($pqr['nombres_apellidos']) {
                                         echo '<span class="font-medium">' . htmlspecialchars($pqr['nombres_apellidos']) . '</span>';
                                         echo '<span class="text-xs text-gray-500 dark:text-gray-400 ml-2">Hab ' . $pqr['nro_pieza'] . '</span>';
                                     } else {
-                                        echo '<span class="text-gray-400 dark:text-gray-500">Sin asociar</span>';
+                                        echo '<span class="text-gray-400 dark:text-gray-500">Sin detalles</span>';
                                     }
                                     ?>
                                 </td>
@@ -303,7 +408,7 @@ include __DIR__ . '/../../includes/header.php';
                         <?php endforeach; ?>
                         <?php if (empty($pagos_qr)): ?>
                             <tr>
-                                <td colspan="4" class="py-12 text-center">
+                                <td colspan="5" class="py-12 text-center">
                                     <div class="flex flex-col items-center">
                                         <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
                                             <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,7 +423,7 @@ include __DIR__ . '/../../includes/header.php';
                     </tbody>
                     <tfoot>
                         <tr class="border-t-2 border-gray-300 dark:border-gray-600">
-                            <th colspan="3" class="text-right py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <th colspan="4" class="text-right py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 TOTAL:
                             </th>
                             <th class="text-right py-4 px-4">
@@ -333,5 +438,31 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+function toggleTipoPago() {
+    const tipoPago = document.querySelector('input[name="tipo_pago"]:checked').value;
+    const ocupacionDiv = document.getElementById('ocupacion_div');
+    const conceptoDiv = document.getElementById('concepto_div');
+    const conceptoInput = document.getElementById('concepto_input');
+    
+    if (tipoPago === 'externo') {
+        // Mostrar campo de concepto y ocultar huésped
+        ocupacionDiv.style.display = 'none';
+        conceptoDiv.style.display = 'block';
+        conceptoInput.required = true;
+    } else {
+        // Mostrar selector de huésped y ocultar concepto
+        ocupacionDiv.style.display = 'block';
+        conceptoDiv.style.display = 'none';
+        conceptoInput.required = false;
+    }
+}
+
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    toggleTipoPago();
+});
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

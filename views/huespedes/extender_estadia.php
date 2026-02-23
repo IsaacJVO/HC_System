@@ -4,36 +4,63 @@ require_once __DIR__ . '/../../models/RegistroOcupacion.php';
 require_once __DIR__ . '/../../models/Habitacion.php';
 require_once __DIR__ . '/../../models/Finanzas.php';
 
-$page_title = 'Extender Estadía';
+$page_title = 'Extender Estadía - Por Habitación';
 $mensaje = '';
 $tipo_mensaje = '';
 
 // Verificar que se recibió un ID de ocupación
-if (!isset($_GET['id']) && !isset($_POST['ocupacion_id'])) {
+if (!isset($_GET['id']) && !isset($_POST['habitacion_id'])) {
     header('Location: activos.php');
     exit;
 }
-
-$ocupacion_id = isset($_GET['id']) ? (int)$_GET['id'] : (int)$_POST['ocupacion_id'];
 
 $registroModel = new RegistroOcupacion();
 $finanzasModel = new Finanzas();
 
-// Obtener información de la ocupación
-$sql = "SELECT ro.*, h.nombres_apellidos, h.ci_pasaporte, hab.numero, hab.precio_dia 
-        FROM registro_ocupacion ro
-        INNER JOIN huespedes h ON ro.huesped_id = h.id
-        INNER JOIN habitaciones hab ON ro.habitacion_id = hab.id
-        WHERE ro.id = :id";
+// Obtener habitacion_id (desde ocupacion_id o directamente)
+if (isset($_POST['habitacion_id'])) {
+    $habitacion_id = (int)$_POST['habitacion_id'];
+} else {
+    $ocupacion_id = (int)$_GET['id'];
+    // Obtener habitacion_id desde la ocupación
+    $sql = "SELECT habitacion_id FROM registro_ocupacion WHERE id = :id";
+    $stmt = $registroModel->conn->prepare($sql);
+    $stmt->execute([':id' => $ocupacion_id]);
+    $temp = $stmt->fetch();
+    if (!$temp) {
+        header('Location: activos.php');
+        exit;
+    }
+    $habitacion_id = $temp['habitacion_id'];
+}
 
-$stmt = $registroModel->conn->prepare($sql);
-$stmt->execute([':id' => $ocupacion_id]);
-$ocupacion = $stmt->fetch();
+// Obtener TODOS los huéspedes de esta habitación (activos o finalizados recientes)
+$huespedes = $registroModel->obtenerHuespedesActivosPorHabitacion($habitacion_id);
 
-if (!$ocupacion) {
+// Si no hay activos, intentar obtener finalizados recientes de esa habitación
+if (empty($huespedes)) {
+    $sql = "SELECT ro.*, h.nombres_apellidos, h.ci_pasaporte, h.genero, h.edad, 
+            hab.numero, hab.precio_dia
+            FROM registro_ocupacion ro
+            INNER JOIN huespedes h ON ro.huesped_id = h.id
+            INNER JOIN habitaciones hab ON ro.habitacion_id = hab.id
+            WHERE ro.habitacion_id = :habitacion_id 
+            AND ro.estado = 'finalizado'
+            AND ro.fecha_salida_real >= DATE_SUB(NOW(), INTERVAL 48 HOUR)
+            ORDER BY ro.fecha_ingreso ASC";
+    
+    $stmt = $registroModel->conn->prepare($sql);
+    $stmt->execute([':habitacion_id' => $habitacion_id]);
+    $huespedes = $stmt->fetchAll();
+}
+
+if (empty($huespedes)) {
     header('Location: activos.php');
     exit;
 }
+
+// Usar el primer huésped para obtener datos comunes de la habitación
+$habitacion = $huespedes[0];
 
 // Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -45,12 +72,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Debe especificar al menos 1 día adicional');
         }
         
-        // Extender la estadía
-        $resultado = $registroModel->extenderEstadia($ocupacion_id, $dias_adicionales);
+        // Extender la estadía de TODA LA HABITACIÓN (todos los huéspedes)
+        $resultado = $registroModel->extenderEstadiaHabitacion($habitacion_id, $dias_adicionales);
         
         if ($resultado['success']) {
-            // Calcular monto y registrar pago
-            $monto_a_pagar = $ocupacion['precio_dia'] * $dias_adicionales;
+            // Calcular monto - EL PRECIO SE COBRA UNA SOLA VEZ POR HABITACIÓN
+            $monto_a_pagar = $habitacion['precio_dia'] * $dias_adicionales;
             
             // Aplicar descuento si existe
             $descuento = 0;
@@ -63,13 +90,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : 'Descuento aplicado';
             }
             
-            // Preparar concepto
-            $concepto = "Extensión de estadía - Hab. {$ocupacion['numero']} - {$ocupacion['nombres_apellidos']} ({$dias_adicionales} " . ($dias_adicionales == 1 ? 'día' : 'días') . ")";
+            // Preparar concepto con todos los huéspedes
+            $nombres_huespedes = array_map(function($h) { return $h['nombres_apellidos']; }, $huespedes);
+            $lista_huespedes = implode(', ', $nombres_huespedes);
+            
+            $concepto = "Extensión de estadía - Hab. {$habitacion['numero']} - {$lista_huespedes} ({$resultado['huespedes_actualizados']} " . 
+                        ($resultado['huespedes_actualizados'] == 1 ? 'huésped' : 'huéspedes') . 
+                        ", {$dias_adicionales} " . ($dias_adicionales == 1 ? 'día' : 'días') . ")";
+            
             if ($descuento > 0) {
                 $concepto .= " (Descuento: Bs. " . number_format($descuento, 2) . " - {$motivo_descuento})";
             }
             
-            // Registrar ingreso financiero
+            // Registrar ingreso financiero (UNA SOLA VEZ)
             $datos_ingreso = [
                 'concepto' => $concepto,
                 'monto' => $monto_a_pagar,
@@ -81,7 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ingreso_id = $finanzasModel->registrarIngreso($datos_ingreso);
             
             if ($ingreso_id) {
-                $mensaje = "Estadía extendida exitosamente. Nueva fecha de salida: " . date('d/m/Y', strtotime($resultado['nueva_fecha_salida']));
+                $mensaje = "Estadía extendida exitosamente para {$resultado['huespedes_actualizados']} " . 
+                          ($resultado['huespedes_actualizados'] == 1 ? 'huésped' : 'huéspedes') . 
+                          ". Nueva fecha de salida: " . date('d/m/Y', strtotime($resultado['nueva_fecha_salida']));
                 $tipo_mensaje = 'success';
                 
                 // Redirigir después de 2 segundos
@@ -103,19 +138,19 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="container mx-auto px-4 py-8">
-    <div class="max-w-2xl mx-auto">
+    <div class="max-w-3xl mx-auto">
         <!-- Título -->
         <div class="mb-6">
             <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
                 <i class="fas fa-calendar-plus text-blue-600 dark:text-blue-400 mr-2"></i>
-                Extender Estadía
+                Extender Estadía - Habitación <?php echo $habitacion['numero']; ?>
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Añadir días adicionales a una estadía existente
+                Todos los huéspedes de la habitación se extenderán juntos • Pago único por habitación
             </p>
         </div>
 
-        <?php if ($ocupacion['estado'] === 'finalizado'): ?>
+        <?php if ($habitacion['estado'] === 'finalizado'): ?>
         <div class="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
             <div class="flex items-start">
                 <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5 mr-3"></i>
@@ -138,57 +173,74 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         <?php endif; ?>
 
-        <!-- Información de la Ocupación Actual -->
+        <!-- Información de la Habitación y Huéspedes -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                Información de la Estadía Actual
+                <i class="fas fa-door-open text-blue-500 mr-2"></i>
+                Información de la Habitación
             </h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400">Huésped</p>
-                    <p class="font-semibold text-gray-900 dark:text-white"><?php echo $ocupacion['nombres_apellidos']; ?></p>
-                </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400">CI/Pasaporte</p>
-                    <p class="font-semibold text-gray-900 dark:text-white"><?php echo $ocupacion['ci_pasaporte']; ?></p>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
                 <div>
                     <p class="text-gray-500 dark:text-gray-400">Habitación</p>
-                    <p class="font-semibold text-gray-900 dark:text-white"><?php echo $ocupacion['numero']; ?></p>
+                    <p class="font-semibold text-gray-900 dark:text-white text-lg"><?php echo $habitacion['numero']; ?></p>
                 </div>
                 <div>
                     <p class="text-gray-500 dark:text-gray-400">Precio por Noche</p>
-                    <p class="font-semibold text-gray-900 dark:text-white">Bs. <?php echo number_format($ocupacion['precio_dia'], 2); ?></p>
+                    <p class="font-semibold text-gray-900 dark:text-white">Bs. <?php echo number_format($habitacion['precio_dia'], 2); ?></p>
                 </div>
                 <div>
                     <p class="text-gray-500 dark:text-gray-400">Fecha de Ingreso</p>
-                    <p class="font-semibold text-gray-900 dark:text-white"><?php echo date('d/m/Y', strtotime($ocupacion['fecha_ingreso'])); ?></p>
+                    <p class="font-semibold text-gray-900 dark:text-white"><?php echo date('d/m/Y', strtotime($habitacion['fecha_ingreso'])); ?></p>
                 </div>
                 <div>
                     <p class="text-gray-500 dark:text-gray-400">Fecha de Salida Actual</p>
-                    <p class="font-semibold text-red-600 dark:text-red-400"><?php echo date('d/m/Y', strtotime($ocupacion['fecha_salida_estimada'])); ?></p>
+                    <p class="font-semibold text-red-600 dark:text-red-400"><?php echo date('d/m/Y', strtotime($habitacion['fecha_salida_estimada'])); ?></p>
                 </div>
                 <div>
                     <p class="text-gray-500 dark:text-gray-400">Días Actuales</p>
-                    <p class="font-semibold text-gray-900 dark:text-white"><?php echo $ocupacion['nro_dias']; ?> <?php echo $ocupacion['nro_dias'] == 1 ? 'día' : 'días'; ?></p>
+                    <p class="font-semibold text-gray-900 dark:text-white"><?php echo $habitacion['nro_dias']; ?> <?php echo $habitacion['nro_dias'] == 1 ? 'día' : 'días'; ?></p>
                 </div>
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400">Estado</p>
-                    <p class="font-semibold">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                            <?php echo $ocupacion['estado'] === 'activo' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'; ?>">
-                            <?php echo ucfirst($ocupacion['estado']); ?>
-                        </span>
+                    <p class="text-gray-500 dark:text-gray-400">Nro. de Huéspedes</p>
+                    <p class="font-semibold text-blue-600 dark:text-blue-400">
+                        <i class="fas fa-users mr-1"></i>
+                        <?php echo count($huespedes); ?> <?php echo count($huespedes) == 1 ? 'huésped' : 'huéspedes'; ?>
                     </p>
+                </div>
+            </div>
+
+            <!-- Lista de Huéspedes -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <i class="fas fa-users text-gray-400 mr-2"></i>
+                    Huéspedes en esta habitación:
+                </p>
+                <div class="space-y-2">
+                    <?php foreach ($huespedes as $idx => $huesped): ?>
+                    <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full font-semibold text-sm">
+                            <?php echo $idx + 1; ?>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                <?php echo htmlspecialchars($huesped['nombres_apellidos']); ?>
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                CI: <?php echo htmlspecialchars($huesped['ci_pasaporte']); ?> · 
+                                <?php echo $huesped['genero'] == 'M' ? 'Masculino' : 'Femenino'; ?> · 
+                                <?php echo $huesped['edad']; ?> años
+                            </p>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
 
         <!-- Formulario de Extensión -->
         <form method="POST" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <input type="hidden" name="ocupacion_id" value="<?php echo $ocupacion_id; ?>">
+            <input type="hidden" name="habitacion_id" value="<?php echo $habitacion_id; ?>">
             
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 <i class="fas fa-calendar-plus text-green-500 mr-2"></i>
@@ -230,7 +282,7 @@ include __DIR__ . '/../../includes/header.php';
                         Total de Días
                     </label>
                     <div id="total_dias" class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-semibold">
-                        <?php echo $ocupacion['nro_dias']; ?> días actuales
+                        <?php echo $habitacion['nro_dias']; ?> días actuales
                     </div>
                 </div>
 
@@ -319,9 +371,10 @@ include __DIR__ . '/../../includes/header.php';
 </div>
 
 <script>
-const precioNoche = <?php echo $ocupacion['precio_dia']; ?>;
-const fechaSalidaActual = new Date('<?php echo $ocupacion['fecha_salida_estimada']; ?>');
-const diasActuales = <?php echo $ocupacion['nro_dias']; ?>;
+const precioNoche = <?php echo $habitacion['precio_dia']; ?>;
+const fechaSalidaActual = new Date('<?php echo $habitacion['fecha_salida_estimada']; ?>');
+const diasActuales = <?php echo $habitacion['nro_dias']; ?>;
+const numHuespedes = <?php echo count($huespedes); ?>;
 
 function calcularTotal() {
     const diasAdicionales = parseInt(document.getElementById('dias_adicionales').value) || 0;
@@ -352,11 +405,12 @@ function calcularTotal() {
         document.getElementById('total_dias').innerHTML = 
             `<i class="fas fa-moon mr-2"></i>${totalDias} ${totalDias === 1 ? 'día' : 'días'} (${diasActuales} + ${diasAdicionales})`;
         
-        // Monto a pagar (sin descuento)
+        // Monto a pagar - PRECIO ÚNICO POR HABITACIÓN (no por huésped)
         const monto = precioNoche * diasAdicionales;
         document.getElementById('monto_pagar').innerHTML = 
             `<span class="text-2xl font-bold text-green-700 dark:text-green-300">Bs. ${monto.toFixed(2)}</span>
-             <span class="text-xs text-green-600 dark:text-green-400 ml-2">(${diasAdicionales} ${diasAdicionales === 1 ? 'noche' : 'noches'} × Bs. ${precioNoche.toFixed(2)})</span>`;
+             <span class="text-xs text-green-600 dark:text-green-400 ml-2">(${diasAdicionales} ${diasAdicionales === 1 ? 'noche' : 'noches'} × Bs. ${precioNoche.toFixed(2)})</span>
+             <p class="text-xs text-green-600 dark:text-green-400 mt-1">✓ Precio único para los ${numHuespedes} ${numHuespedes === 1 ? 'huésped' : 'huéspedes'}</p>`;
         
         // Monto final con descuento
         if (descuento > 0) {

@@ -26,6 +26,7 @@ if (!$cierre) {
 // Obtener detalles
 $ingresos = $cierreModel->obtenerDetallesIngresosCierre($cierre_id);
 $egresos = $cierreModel->obtenerDetallesEgresosCierre($cierre_id);
+$pagos_qr = $cierreModel->obtenerDetallesPagosQRCierre($cierre_id);
 
 // Crear PDF
 $pdf = new TCPDF('P', 'mm', 'LETTER', true, 'UTF-8', false);
@@ -202,6 +203,59 @@ if (!empty($egresos)) {
 } else {
     $pdf->SetFont('helvetica', 'I', 9);
     $pdf->Cell(0, 6, 'No hay egresos registrados en este período', 0, 1, 'C');
+}
+
+$pdf->Ln(8);
+
+// ===== DETALLE DE PAGOS QR =====
+$pdf->SetFillColor(240, 240, 240);
+$pdf->SetFont('helvetica', 'B', 11);
+$pdf->Cell(0, 7, 'DETALLE DE PAGOS QR', 0, 1, 'L', true);
+
+$pdf->Ln(2);
+
+if (!empty($pagos_qr)) {
+    // Encabezados de tabla
+    $pdf->SetFillColor(220, 220, 255); // Morado claro
+    $pdf->SetFont('helvetica', 'B', 8);
+    $pdf->Cell(20, 6, 'Fecha', 1, 0, 'C', true);
+    $pdf->Cell(20, 6, 'Tipo', 1, 0, 'C', true);
+    $pdf->Cell(70, 6, 'Concepto/Huésped', 1, 0, 'C', true);
+    $pdf->Cell(35, 6, 'Nro Transacción', 1, 0, 'C', true);
+    $pdf->Cell(30, 6, 'Monto', 1, 1, 'C', true);
+    
+    // Datos
+    $pdf->SetFont('helvetica', '', 7);
+    $total_qr_detalle = 0;
+    foreach ($pagos_qr as $pqr) {
+        $total_qr_detalle += $pqr['monto'];
+        $es_externo = ($pqr['tipo'] ?? 'huesped') === 'externo';
+        
+        $pdf->Cell(20, 5, date('d/m/Y', strtotime($pqr['fecha'])), 1, 0, 'C');
+        $pdf->Cell(20, 5, $es_externo ? 'Externo' : 'Huésped', 1, 0, 'C');
+        
+        // Concepto/Huésped
+        $concepto_texto = '';
+        if ($es_externo && !empty($pqr['concepto'])) {
+            $concepto_texto = substr($pqr['concepto'], 0, 40);
+        } elseif (!empty($pqr['nombres_apellidos'])) {
+            $concepto_texto = substr($pqr['nombres_apellidos'], 0, 30) . ' (Hab ' . $pqr['nro_pieza'] . ')';
+        } else {
+            $concepto_texto = 'Sin detalles';
+        }
+        
+        $pdf->Cell(70, 5, $concepto_texto, 1, 0, 'L');
+        $pdf->Cell(35, 5, substr($pqr['numero_transaccion'] ?? '-', 0, 15), 1, 0, 'C');
+        $pdf->Cell(30, 5, 'Bs. ' . number_format($pqr['monto'], 2), 1, 1, 'R');
+    }
+    
+    // Total
+    $pdf->SetFont('helvetica', 'B', 9);
+    $pdf->Cell(145, 6, 'TOTAL PAGOS QR', 1, 0, 'R');
+    $pdf->Cell(30, 6, 'Bs. ' . number_format($total_qr_detalle, 2), 1, 1, 'R');
+} else {
+    $pdf->SetFont('helvetica', 'I', 9);
+    $pdf->Cell(0, 6, 'No hay pagos QR registrados en este período', 0, 1, 'C');
 }
 
 // ===== FIRMAS =====
